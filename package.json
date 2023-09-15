@@ -2,7 +2,7 @@
     "name": "inscriptum-platform",
     "private": true,
     "author": "Nathan Dev",
-    "version": "0.0.1",
+    "version": "0.0.0",
     "scripts": {},
     "devDependencies": {},
     "workspaces": ["apps/*", "packages/*", "services/*"]
