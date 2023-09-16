@@ -3,7 +3,8 @@
     "private": true,
     "author": "Nathan Dev",
     "version": "0.0.0",
-    "scripts": {},
+    "scripts": {
+    },
     "devDependencies": {
         "@commitlint/cli": "^17.7.1",
         "@commitlint/config-conventional": "^17.7.0"
