@@ -12,7 +12,7 @@ module.exports = {
         'header-max-length': [
             2,
             'always',
-            200
+            150
         ],
         'type-enum': [
             2,
