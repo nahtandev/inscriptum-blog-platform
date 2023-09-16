@@ -29,7 +29,7 @@ module.exports = {
                 'revert',
                 'style',
                 'test',
-                'config'
+                'configs'
             ]
         ],
         'scope-enum': [
