@@ -4,6 +4,13 @@
     "author": "Nathan Dev",
     "version": "0.0.0",
     "scripts": {},
-    "devDependencies": {},
-    "workspaces": ["apps/*", "packages/*", "services/*"]
+    "devDependencies": {
+        "@commitlint/cli": "^17.7.1",
+        "@commitlint/config-conventional": "^17.7.0"
+    },
+    "workspaces": [
+        "apps/*",
+        "packages/*",
+        "services/*"
+    ]
 }
