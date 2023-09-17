@@ -61,3 +61,5 @@ The subject contains a succinct description of the change.
 
 - `config: [#2] setup conventional commit (wip)`
 - `feat(dashboard): [#1] setup next app`
+
+See https://www.conventionalcommits.org/fr/v1.0.0/ to read more. 
