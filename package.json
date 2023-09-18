@@ -4,10 +4,15 @@
     "author": "Nathan Dev",
     "version": "0.0.0",
     "scripts": {
+        "commitlint": "commitlint",
+        "packages:format": "npx prettier --write packages/",
+        "packages:format-check": "npx prettier --check packages/"
     },
     "devDependencies": {
         "@commitlint/cli": "^17.7.1",
-        "@commitlint/config-conventional": "^17.7.0"
+        "@commitlint/config-conventional": "^17.7.0",
+        "eslint": "8.49.0",
+        "prettier": "3.0.3"
     },
     "workspaces": [
         "apps/*",
