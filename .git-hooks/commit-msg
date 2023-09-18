@@ -1,2 +1,3 @@
 #!/bin/sh
 npx --no-install commitlint --edit $1
+npx prettier --check package.json $1
