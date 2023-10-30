@@ -6,11 +6,14 @@
     "scripts": {
         "commitlint": "commitlint",
         "packages:format": "npx prettier --write packages/",
-        "packages:format-check": "npx prettier --check packages/"
+        "packages:format-check": "npx prettier --check packages/",
+        "api:dev": "cd services/api && npm run start:dev",
+        "dev": "conc -n 'SERVER_API' -c 'magenta.bold' 'npm run api:dev'"
     },
     "devDependencies": {
         "@commitlint/cli": "^17.7.1",
         "@commitlint/config-conventional": "^17.7.0",
+        "concurrently": "^8.2.2",
         "eslint": "8.49.0",
         "prettier": "3.0.3"
     },
