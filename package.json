@@ -8,7 +8,8 @@
         "packages:format": "npx prettier --write packages/",
         "packages:format-check": "npx prettier --check packages/",
         "api:dev": "cd services/api && npm run start:dev",
-        "dev": "conc -n 'SERVER_API' -c 'magenta.bold' 'npm run api:dev'"
+        "dashboard:dev": "cd apps/dashboard && npm run dev",
+        "dev": "conc -n 'SERVER_API,DASHBOARD' -c 'magenta.bold,green.bold' 'npm run api:dev' 'npm run dashboard:dev'"
     },
     "devDependencies": {
         "@commitlint/cli": "^17.7.1",
