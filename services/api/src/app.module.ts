@@ -3,7 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { join } from "path";
 import { DataSource } from "typeorm";
 import { AppController } from "./app.controller";
-import { AuthModule } from "./auth/auth.module";
+import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
     controllers: [AppController],
