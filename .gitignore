@@ -29,3 +29,6 @@ next-env.d.ts
 
 # macOS-specific files
 .DS_Store
+
+# database file
+services/api/data/*
