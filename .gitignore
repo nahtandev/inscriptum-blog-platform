@@ -11,7 +11,10 @@ out/
 
 # env file
 .env
-.env.production
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
 
 # debug
 npm-debug.log*
