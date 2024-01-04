@@ -1,8 +1,12 @@
 import { Injectable } from "@nestjs/common";
+import { MailerService } from "../mailer/mailer.service";
 
 @Injectable()
 export class AuthService {
+    constructor(private mailerService: MailerService) {}
+
     signup(): string {
+        this.mailerService.sendMail();
         return "Signup succeful";
     }
 
