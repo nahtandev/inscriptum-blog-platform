@@ -1,7 +1,7 @@
+import { mailer as mailerConfig } from "config.json";
 import { resolve } from "path";
 import { cwd } from "process";
 import { isAccessiblePath } from "src/utils/basic.util";
-import { mailer as mailerConfig } from "../../../../config.json";
 
 export function templateExist(templateName: string) {
   if (
@@ -11,3 +11,5 @@ export function templateExist(templateName: string) {
   }
   return true;
 }
+
+// TODO: Init liquid JS to read a template. Setup template with partials to don't reapeat header and footer
