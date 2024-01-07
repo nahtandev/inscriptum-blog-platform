@@ -1,9 +1,9 @@
 import { mailer as mailerConfig } from "config.json";
-import { SendMailOptions, createTransport } from "nodemailer";
-import { Attachment as NodeMailerAttachment } from "nodemailer/lib/mailer";
+import { createTransport } from "nodemailer";
 import { resolve } from "path";
 import { cwd } from "process";
 import { isAccessiblePath } from "src/utils/basic.util";
+import { readLiquidTemplate } from "./liquidjs.helper";
 
 /**
  * Todo
@@ -32,8 +32,8 @@ export interface SimpleMailOptions {
   to: Address;
   subject: string;
   html: string;
-  attachements: Attachement[];
-  embeddedImages: EmbeddedImage[];
+  attachements?: Attachement[];
+  embeddedImages?: EmbeddedImage[];
 }
 
 export interface SendSimpleMailResponse {
@@ -58,13 +58,13 @@ export async function sendSimpleMail({
       pass: process.env.SMTP_PASSWORD,
     },
   });
-  const allAttachement: NodeMailerAttachment[] = [...embeddedImages];
+  // const allAttachement: NodeMailerAttachment[] = [...embeddedImages];
 
-  for (const file of attachements) {
-    if (file.fileName)
-      allAttachement.push({ filename: file.fileName, path: file.filePath });
-    else allAttachement.push({ path: file.filePath });
-  }
+  // for (const file of attachements) {
+  //   if (file.fileName)
+  //     allAttachement.push({ filename: file.fileName, path: file.filePath });
+  //   else allAttachement.push({ path: file.filePath });
+  // }
 
   try {
     const sentMessageInfo = await transporter.sendMail({
@@ -74,7 +74,7 @@ export async function sendSimpleMail({
       to: to.name ? { name: to.name, address: to.address } : to.address,
       subject,
       html,
-      attachments: allAttachement,
+      // attachments: allAttachement,
     });
 
     return {
@@ -86,9 +86,9 @@ export async function sendSimpleMail({
   }
 }
 
-async function sendMailFromTemplate(
-  templateName: string,
-  mailOptions: SendMailOptions
+export async function sendMailFromTemplate(
+  templateName: string
+  // mailOptions: SendMailOptions
 ) {
   const templateDir = resolve(cwd(), mailerConfig.templatesDir, templateName);
 
@@ -96,6 +96,15 @@ async function sendMailFromTemplate(
     throw new Error(`invalid template, ${templateDir}`);
   }
 
+  const html = await readLiquidTemplate(templateName);
+  console.log(html);
+
+  const sendMail = await sendSimpleMail({
+    from: { name: "Inscriptum", address: "inscriptum@hellonathan.dev" },
+    to: { name: "Nathan", address: "gnankadjanathan@gmail.com" },
+    html,
+    subject: "Implémentation d'un template liquid",
+  });
   // const html = readFileSync(join(templateDir, "index.html")).toString(
   //   "utf-8"
   // );
@@ -118,4 +127,6 @@ async function sendMailFromTemplate(
   //     path: file.filePath,
   //   };
   // });
+
+  return sendMail;
 }
