@@ -11,11 +11,6 @@ export interface Attachement {
   filePath: string;
 }
 
-export interface EmbeddedImage {
-  path: string;
-  cid: string;
-}
-
 export type Address = {
   address: string;
   name?: string;
