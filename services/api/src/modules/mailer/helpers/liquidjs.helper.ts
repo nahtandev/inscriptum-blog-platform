@@ -14,7 +14,8 @@ export function templateExist(templateName: string) {
 }
 
 export async function readLiquidTemplate(
-  templateName: string
+  templateName: string,
+  variables: { [key: string]: any }
 ): Promise<string> {
   if (!templateExist(templateName)) {
     throw new Error(`invalid template name or directory: ${templateName}`);
@@ -25,14 +26,11 @@ export async function readLiquidTemplate(
     cache: true,
     root: templatesDir,
     extname: ".liquid",
-    // outputEscape: "escape",
   });
-
   const html = await liquidEngine.renderFile(
     `${templateName}/main.liquid`,
-    {},
+    variables,
     {}
   );
   return `${html}`;
 }
-// TODO: Init liquid JS to read a template. Setup template with partials to don't reapeat header and footer

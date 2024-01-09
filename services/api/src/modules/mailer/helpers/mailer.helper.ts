@@ -1,16 +1,10 @@
 import { mailer as mailerConfig } from "config.json";
-import { createTransport } from "nodemailer";
 import { resolve } from "path";
 import { cwd } from "process";
 import { isAccessiblePath } from "src/utils/basic.util";
+import { localeImagesProcessing } from "./images-cid-processing.helper";
 import { readLiquidTemplate } from "./liquidjs.helper";
-
-/**
- * Todo
- * - Récupérer les fichiers joints: fileName?, path.
- * - Configurer Liquid pour générer du html à partir d"un template.
- * - Ne pas ommettre aussi la gestion des images intégrés.
- */
+import transporter from "./transporter";
 
 export interface Attachement {
   fileName?: string;
@@ -32,8 +26,7 @@ export interface SimpleMailOptions {
   to: Address;
   subject: string;
   html: string;
-  attachements?: Attachement[];
-  embeddedImages?: EmbeddedImage[];
+  medias?: Attachement[];
 }
 
 export interface SendSimpleMailResponse {
@@ -46,26 +39,8 @@ export async function sendSimpleMail({
   to,
   subject,
   html,
-  attachements,
-  embeddedImages,
+  medias,
 }: SimpleMailOptions): Promise<SendSimpleMailResponse> {
-  const transporter = createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT),
-    secure: true,
-    auth: {
-      user: process.env.SMTP_USERNAME,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-  // const allAttachement: NodeMailerAttachment[] = [...embeddedImages];
-
-  // for (const file of attachements) {
-  //   if (file.fileName)
-  //     allAttachement.push({ filename: file.fileName, path: file.filePath });
-  //   else allAttachement.push({ path: file.filePath });
-  // }
-
   try {
     const sentMessageInfo = await transporter.sendMail({
       from: from.name
@@ -74,7 +49,15 @@ export async function sendSimpleMail({
       to: to.name ? { name: to.name, address: to.address } : to.address,
       subject,
       html,
-      // attachments: allAttachement,
+      attachments: medias?.map((media) => {
+        if (media.fileName) {
+          return {
+            filename: media.fileName,
+            path: media.filePath,
+          };
+        }
+        return { path: media.filePath };
+      }),
     });
 
     return {
@@ -87,46 +70,25 @@ export async function sendSimpleMail({
 }
 
 export async function sendMailFromTemplate(
-  templateName: string
-  // mailOptions: SendMailOptions
-) {
+  templateName: string,
+  variables: { [key: string]: any },
+  mailOptions: { from: Address; to: Address; subject: string }
+): Promise<SendSimpleMailResponse> {
   const templateDir = resolve(cwd(), mailerConfig.templatesDir, templateName);
 
   if (!isAccessiblePath(templateDir)) {
     throw new Error(`invalid template, ${templateDir}`);
   }
 
-  const html = await readLiquidTemplate(templateName);
-  console.log(html);
+  const template = await readLiquidTemplate(templateName, variables);
+  const { html } = await localeImagesProcessing(template, templateDir);
 
   const sendMail = await sendSimpleMail({
-    from: { name: "Inscriptum", address: "inscriptum@hellonathan.dev" },
-    to: { name: "Nathan", address: "gnankadjanathan@gmail.com" },
+    from: mailOptions.from,
+    to: mailOptions.to,
+    subject: mailOptions.subject,
     html,
-    subject: "Implémentation d'un template liquid",
   });
-  // const html = readFileSync(join(templateDir, "index.html")).toString(
-  //   "utf-8"
-  // );
-  // const formatted = cidProcessing(html, templateDir);
-  // const embeddedImages: Attachment[] = formatted.cidImages.map((el) => {
-  //   return {
-  //     path: resolve(templateDir, el.oldSrc),
-  //     cid: el.cid,
-  //   };
-  // });
-  // console.log(getImagesElementFromHtml(html));
-  // attachements.map<NodeMailerAttachment>((file) => {
-  //   if (file.fileName) {
-  //     return {
-  //       filename: file.fileName,
-  //       path: file.filePath,
-  //     };
-  //   }
-  //   return {
-  //     path: file.filePath,
-  //   };
-  // });
 
   return sendMail;
 }

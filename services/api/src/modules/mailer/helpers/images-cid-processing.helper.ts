@@ -1,28 +1,33 @@
+import { v2 as cloudinary } from "cloudinary";
+import { config } from "dotenv";
 import { JSDOM } from "jsdom";
-import { resolve } from "path";
-import { generateRandomString, isAccessiblePath } from "src/utils/basic.util";
+import { join } from "path";
 
-export function cidProcessing(html: string, currentTemplateDir: string) {
+config();
+
+// TODO: handle duplicate locale assets
+export async function localeImagesProcessing(
+  html: string,
+  currentTemplateDir: string
+) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+
   const dom = new JSDOM(html);
-  let cidImages: { cid: string; oldSrc: string }[] = [];
-
   const imageElements = dom.window.document.getElementsByTagName("img");
-  const imagesSrc = Array.from(imageElements).map((element) => element.src);
-
-  for (const src of imagesSrc) {
-    if (isAccessiblePath(resolve(currentTemplateDir, src))) {
-      cidImages.push({
-        cid: generateRandomString(),
-        oldSrc: src,
-      });
-    } else continue;
+  for (const element of Array.from(imageElements)) {
+    if (
+      element.dataset.localImageProccess &&
+      element.dataset.localImageProccess === "upload"
+    ) {
+      const response = await cloudinary.uploader.upload(
+        join(currentTemplateDir, element.src)
+      );
+      element.setAttribute("src", response.secure_url);
+    }
   }
-
-  for (let i = 0; i < imageElements.length; i++) {
-    const img = imageElements[i];
-    const cid = cidImages.find((el) => el.oldSrc === img.src);
-    img.setAttribute("src", `cid:${cid.cid}`);
-  }
-
-  return { html: dom.serialize(), cidImages };
+  return { html: dom.serialize() };
 }
