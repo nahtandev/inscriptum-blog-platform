@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  HttpStatus,
-  Post,
-  Res,
-} from "@nestjs/common";
-import { Response } from "express";
+import { Body, Controller, Delete, HttpCode, Post } from "@nestjs/common";
 import { SignupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
@@ -15,18 +7,13 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post("signup")
-  async signup(
-    @Body() payload: SignupDto,
-    @Res({ passthrough: true }) res: Response
-  ) {
-    await this.authService.signup(payload);
-    res.status(HttpStatus.CREATED).json({
-      success: true,
-      message: "Account created succeful",
-    });
+  @HttpCode(201)
+  async signup(@Body() payload: SignupDto) {
+    return await this.authService.signup(payload);
   }
 
   @Post("signup/confirm")
+  @HttpCode(200)
   signupConfirm() {
     return this.authService.signupConfirm();
   }
