@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { database as dbConfig } from "config.json";
 import { join } from "path";
+import { cwd } from "process";
 import { DataSource } from "typeorm";
 import { AppController } from "./app.controller";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -11,10 +13,12 @@ import { AuthModule } from "./modules/auth/auth.module";
     AuthModule,
     TypeOrmModule.forRoot({
       type: "sqlite",
-      database: join("data", "database.sqlite"), //TODO: Store a path in a config file
+      database: join(cwd(), dbConfig.databaseDir, "db.sqlite"), //TODO: Store a path in a config file
       logging: "all",
       logger: "advanced-console",
       manualInitialization: true,
+      entities: [join(__dirname, "/modules/**/*model.js")],
+      synchronize: process.env.NODE_ENV === "dev" ? true : false,
     }),
   ],
 })

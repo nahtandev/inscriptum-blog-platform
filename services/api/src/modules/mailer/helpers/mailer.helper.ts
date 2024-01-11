@@ -1,7 +1,7 @@
 import { mailer as mailerConfig } from "config.json";
 import { resolve } from "path";
 import { cwd } from "process";
-import { isAccessiblePath } from "src/utils/basic.util";
+import { isAccessiblePath } from "src/helpers/common.helper";
 import { localeImagesProcessing } from "./images-cid-processing.helper";
 import { readLiquidTemplate } from "./liquidjs.helper";
 import transporter from "./transporter";
