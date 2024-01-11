@@ -1,8 +1,4 @@
-import {
-  BadGatewayException,
-  ConflictException,
-  Injectable,
-} from "@nestjs/common";
+import { BadGatewayException, ConflictException, Injectable } from "@nestjs/common";
 import { MailerService } from "../mailer/mailer.service";
 import { UserService } from "../user/user.service";
 import { SignupDto } from "./auth.dto";
@@ -12,6 +8,7 @@ import {
   hashPassword,
   makeAccountActivationUrl,
 } from "./auth.helper";
+
 @Injectable()
 export class AuthService {
   constructor(
