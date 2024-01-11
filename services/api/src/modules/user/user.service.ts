@@ -32,7 +32,7 @@ export class UserService {
   ) {}
 
   async createUser(payload: CreateUserPayload) {
-    return this.userRepository.create(payload);
+    return this.userRepository.save(payload);
   }
 
   async updateOneUser(id: number, payload: CreateUserPayload) {
@@ -75,7 +75,7 @@ export class UserService {
   }
 
   async createPublisher(payload: CreatePublisherPayload) {
-    return this.publisherRepository.create(payload);
+    return this.publisherRepository.save(payload);
   }
 
   async getOnePublisherByUserId(userId: number) {

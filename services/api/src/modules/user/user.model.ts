@@ -26,10 +26,10 @@ export class UserEntity {
   @Column({ type: "simple-array", length: 15 })
   roles: string[];
 
-  @Column({ type: "varchar", length: 100, nullable: true })
+  @Column({ type: "varchar", length: 128, nullable: true })
   resetPasswordToken: string;
 
-  @Column({ type: "bigint" })
+  @Column({ type: "bigint", nullable: true })
   tokenExpireAt: number;
 
   @Column({ type: "boolean" })

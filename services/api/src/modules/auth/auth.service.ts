@@ -6,6 +6,7 @@ import {
   generateResetPasswordToken,
   generateTokenExpireAt,
   hashPassword,
+  makeAccountActivationUrl,
 } from "./auth.helper";
 @Injectable()
 export class AuthService {
@@ -16,47 +17,54 @@ export class AuthService {
 
   async signup(payload: SignupDto) {
     const { email, firstName, lastName, password } = payload;
+    try {
+      const user = await this.userService.getOneUserByEmail(email);
 
-    const user = await this.userService.getOneUserByEmail(email);
-    if (user) {
-      if (user.isActive) {
+      if (user?.isActive) {
         throw new ConflictException(
           "this email address is linked and account."
         );
       }
 
       const passwordEncrypted = await hashPassword(password);
-      const newResetPasswordToken = generateResetPasswordToken();
-      try {
-        const updatedUser = await this.userService.updateOneUser(user.id, {
+      const resetPasswordToken = generateResetPasswordToken();
+      const accountActivationUrl = makeAccountActivationUrl(resetPasswordToken);
+
+      if (user) {
+        await this.userService.updateOneUser(user.id, {
           email,
           firstName,
           lastName,
           password: passwordEncrypted,
-          resetPasswordToken: newResetPasswordToken,
+          resetPasswordToken,
           tokenExpireAt: generateTokenExpireAt(),
           roles: ["publisher"],
           isActive: false,
         });
-
-        const validationUrl = "";
-        /**
-         * TODO: Create a validation url
-         * Create sendAccont activation mail
-         * Send Mail
-         * Send Succeful request
-         *  */
-      } catch (error) {
-        throw new Error(`error to update an user ${error}`);
+      } else {
+        await this.userService.createUser({
+          email,
+          firstName,
+          lastName,
+          password: passwordEncrypted,
+          resetPasswordToken,
+          tokenExpireAt: generateTokenExpireAt(),
+          roles: ["publisher"],
+          isActive: false,
+        });
       }
-    }
 
-    const html = `<h2>Bonjour Hello Test </h2>`;
-    this.mailerService.sendMail("blank", html, {
-      to: { name: "Nathan", address: "gnankadjanathan@gmail.com" },
-      subject: "Test du service mail",
-    });
-    return "Signup succeful";
+      this.mailerService.sendAccountActivationMail({
+        firstName,
+        lastName,
+        email,
+        activationLink: accountActivationUrl,
+      });
+    } catch (error) {
+      throw new Error(
+        `[signup]: error to register a new user. Error: ${error}`
+      );
+    }
   }
 
   signupConfirm(): string {

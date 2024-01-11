@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpStatus,
+  Post,
+  Res,
+} from "@nestjs/common";
+import { Response } from "express";
 import { SignupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
@@ -7,8 +15,15 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post("signup")
-  signup(@Body() payload: SignupDto) {
-    return this.authService.signup(payload);
+  async signup(
+    @Body() payload: SignupDto,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    await this.authService.signup(payload);
+    res.status(HttpStatus.CREATED).json({
+      success: true,
+      message: "Account created succeful",
+    });
   }
 
   @Post("signup/confirm")

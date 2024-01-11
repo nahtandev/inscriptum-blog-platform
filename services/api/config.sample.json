@@ -1,1 +1,8 @@
-{}
+{
+  "mailer": {
+    "templatesDir": "data/mail-templates"
+  },
+  "database": {
+    "databaseDir": "data/database"
+  }
+}
