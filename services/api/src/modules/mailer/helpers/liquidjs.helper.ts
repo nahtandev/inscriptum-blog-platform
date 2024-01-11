@@ -2,7 +2,7 @@ import { mailer as mailerConfig } from "config.json";
 import { Liquid } from "liquidjs";
 import { join, resolve } from "path";
 import { cwd } from "process";
-import { isAccessiblePath } from "src/utils/basic.util";
+import { isAccessiblePath } from "src/helpers/common.helper";
 
 export function templateExist(templateName: string) {
   if (
