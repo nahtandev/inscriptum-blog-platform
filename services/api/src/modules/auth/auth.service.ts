@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { BadGatewayException, ConflictException, Injectable } from "@nestjs/common";
 import { MailerService } from "../mailer/mailer.service";
 import { UserService } from "../user/user.service";
 import { SignupDto } from "./auth.dto";
@@ -8,6 +8,7 @@ import {
   hashPassword,
   makeAccountActivationUrl,
 } from "./auth.helper";
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,15 +18,16 @@ export class AuthService {
 
   async signup(payload: SignupDto) {
     const { email, firstName, lastName, password } = payload;
+    const user = await this.userService.getOneUserByEmail(email);
+
+    if (user?.isActive) {
+      throw new ConflictException("This email address is linked and account.", {
+        description:
+          "The email provided is linked an account. Try to signin or use another email",
+      });
+    }
+
     try {
-      const user = await this.userService.getOneUserByEmail(email);
-
-      if (user?.isActive) {
-        throw new ConflictException(
-          "this email address is linked and account."
-        );
-      }
-
       const passwordEncrypted = await hashPassword(password);
       const resetPasswordToken = generateResetPasswordToken();
       const accountActivationUrl = makeAccountActivationUrl(resetPasswordToken);
@@ -61,10 +63,15 @@ export class AuthService {
         activationLink: accountActivationUrl,
       });
     } catch (error) {
-      throw new Error(
-        `[signup]: error to register a new user. Error: ${error}`
-      );
+      throw new BadGatewayException("Signup process failed, please retry", {
+        cause: `[signup]: error to register a new user. Error: ${error}`,
+      });
     }
+
+    return {
+      success: true,
+      message: "Account created succeful. Please, confirm email",
+    };
   }
 
   signupConfirm(): string {
