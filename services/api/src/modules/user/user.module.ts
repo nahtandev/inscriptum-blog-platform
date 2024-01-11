@@ -4,10 +4,7 @@ import { PublisherEntity, UserEntity } from "./user.model";
 import { UserService } from "./user.service";
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserEntity, PublisherEntity]),
-    // AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([UserEntity, PublisherEntity])],
   exports: [UserService],
   providers: [UserService],
 })
