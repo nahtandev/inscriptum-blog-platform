@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { config } from "dotenv";
+import { ConfigService } from "@nestjs/config";
+import { Transporter } from "nodemailer";
+import { CloudinaryConfig, MailConf } from "src/app-context/context-type";
 import { Address, sendMailFromTemplate } from "./helpers/mailer.helper";
-
-config();
 
 interface SendAccountActivationMailPayload {
   firstName: string;
@@ -13,22 +13,36 @@ interface SendAccountActivationMailPayload {
 
 @Injectable()
 export class MailerService {
+  constructor(private configService: ConfigService) {}
+
   async sendMail(
     template: string,
     htmlContent: string,
     options: { to: Address; subject: string }
   ) {
-    return await sendMailFromTemplate(
-      template,
-      { htmlContent, platformEmail: process.env.SENDER_EMAIL },
-      {
+    const { sender, templatesDir } =
+      this.configService.get<MailConf>("mailConf");
+
+    const mailTransporter =
+      this.configService.get<Transporter>("mailTransporter");
+
+    const cloudinaryConf =
+      this.configService.get<CloudinaryConfig>("cloudinaryConf");
+
+    return await sendMailFromTemplate({
+      cloudinaryOption: cloudinaryConf,
+      transporter: mailTransporter,
+      templateName: template,
+      templatesDir,
+      variables: { htmlContent, platformEmail: sender.email },
+      mailOptions: {
         from: {
-          name: process.env.SENDER_NAME,
-          address: process.env.SENDER_EMAIL,
+          name: sender.name,
+          address: sender.email,
         },
         ...options,
-      }
-    );
+      },
+    });
   }
 
   async sendAccountActivationMail({
@@ -37,21 +51,32 @@ export class MailerService {
     email,
     activationLink,
   }: SendAccountActivationMailPayload) {
-    return await sendMailFromTemplate(
-      "account-activation",
-      {
+    const { sender, templatesDir } =
+      this.configService.get<MailConf>("mailConf");
+
+    const transporter = this.configService.get<Transporter>("mailTransporter");
+
+    const cloudinaryConf =
+      this.configService.get<CloudinaryConfig>("cloudinaryConf");
+
+    return await sendMailFromTemplate({
+      cloudinaryOption: cloudinaryConf,
+      transporter,
+      templateName: "account-activation",
+      templatesDir,
+      variables: {
         firstName,
         activationLink,
-        platformEmail: process.env.SENDER_EMAIL,
+        platformEmail: sender.email,
       },
-      {
+      mailOptions: {
         to: { name: `${firstName} ${lastName}`, address: email },
         from: {
-          name: process.env.SENDER_NAME,
-          address: process.env.SENDER_EMAIL,
+          name: sender.name,
+          address: sender.email,
         },
         subject: `[Welcome ${firstName} 👋️👋️] Please confirm your email`,
-      }
-    );
+      },
+    });
   }
 }

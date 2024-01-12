@@ -1,8 +1,11 @@
 {
   "mailer": {
-    "templatesDir": "data/mail-templates"
+    "templatesDir": "data/mail-templates",
+    "senderName": "",
+    "senderEmail": ""
   },
   "database": {
-    "databaseDir": "data/database"
+    "dir": "data/database",
+    "name": "database.sqlite"
   }
 }

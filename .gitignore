@@ -16,6 +16,9 @@ out/
 !.env.project
 !.env.vault
 
+# config file
+**/config.json
+
 # debug
 npm-debug.log*
 

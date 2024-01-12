@@ -1,19 +1,18 @@
 import { v2 as cloudinary } from "cloudinary";
-import { config } from "dotenv";
 import { JSDOM } from "jsdom";
 import { join } from "path";
-
-config();
+import { CloudinaryConfig } from "src/app-context/context-type";
 
 // TODO: handle duplicate locale assets
 export async function localeImagesProcessing(
   html: string,
-  currentTemplateDir: string
+  currentTemplateDir: string,
+  { apiKey, apiSecret, cloudName }: CloudinaryConfig
 ) {
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
   });
 
   const dom = new JSDOM(html);

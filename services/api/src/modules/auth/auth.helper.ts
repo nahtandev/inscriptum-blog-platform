@@ -23,12 +23,10 @@ export function generateTokenExpireAt() {
   return unixTimestamp() + validityPeriod;
 }
 
-export function makeAccountActivationUrl(token: string) {
-  return `${process.env.APP_URL}/auth/signup/activate/${encodeURIComponent(
-    token
-  )}`;
+export function makeAccountActivationUrl(token: string, webAppUrl) {
+  return `${webAppUrl}/auth/signup/activate/${encodeURIComponent(token)}`;
 }
 
-export function makeResetPasswordUrl(token: string) {
-  return `${process.env.APP_URL}/account`; // TODO: Finalize it in next task
+export function makeResetPasswordUrl(token: string, webAppUrl: string) {
+  return `${webAppUrl}/account`; // TODO: Finalize it in next task
 }

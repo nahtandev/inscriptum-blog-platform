@@ -1,4 +1,6 @@
 import { BadGatewayException, ConflictException, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ApiConf } from "src/app-context/context-type";
 import { MailerService } from "../mailer/mailer.service";
 import { UserService } from "../user/user.service";
 import { SignupDto } from "./auth.dto";
@@ -13,10 +15,12 @@ import {
 export class AuthService {
   constructor(
     private mailerService: MailerService,
-    private userService: UserService
+    private userService: UserService,
+    private configService: ConfigService
   ) {}
 
   async signup(payload: SignupDto) {
+    const { webAppUrl } = this.configService.get<ApiConf>("apiConf");
     const { email, firstName, lastName, password } = payload;
     const user = await this.userService.getOneUserByEmail(email);
 
@@ -30,7 +34,10 @@ export class AuthService {
     try {
       const passwordEncrypted = await hashPassword(password);
       const resetPasswordToken = generateResetPasswordToken();
-      const accountActivationUrl = makeAccountActivationUrl(resetPasswordToken);
+      const accountActivationUrl = makeAccountActivationUrl(
+        resetPasswordToken,
+        webAppUrl
+      );
 
       if (user) {
         await this.userService.updateOneUser(user.id, {
