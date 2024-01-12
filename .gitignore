@@ -18,7 +18,6 @@ out/
 
 # config file
 **/config.json
-services/api/config.json
 
 # debug
 npm-debug.log*
