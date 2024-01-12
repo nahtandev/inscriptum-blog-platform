@@ -80,7 +80,12 @@ export async function sendMailFromTemplate({
     throw new Error(`invalid template, ${templatesDir}`);
   }
 
-  const template = await readLiquidTemplate(templateName, variables);
+  const template = await readLiquidTemplate({
+    templateName,
+    variables,
+    templatesDir,
+  });
+
   const { html } = await localeImagesProcessing(
     template,
     templatesDir,

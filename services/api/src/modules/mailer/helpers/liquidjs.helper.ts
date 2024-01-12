@@ -1,27 +1,27 @@
-import { mailer as mailerConfig } from "config.json";
 import { Liquid } from "liquidjs";
-import { join, resolve } from "path";
+import { resolve } from "path";
 import { cwd } from "process";
 import { isAccessiblePath } from "src/helpers/common.helper";
 
-export function templateExist(templateName: string) {
-  if (
-    !isAccessiblePath(resolve(cwd(), mailerConfig.templatesDir, templateName))
-  ) {
+export function templateExist(templateName: string, templatesDir: string) {
+  if (!isAccessiblePath(resolve(cwd(), templatesDir, templateName))) {
     return false;
   }
   return true;
 }
 
-export async function readLiquidTemplate(
-  templateName: string,
-  variables: { [key: string]: any }
-): Promise<string> {
-  if (!templateExist(templateName)) {
+export async function readLiquidTemplate({
+  templateName,
+  templatesDir,
+  variables,
+}: {
+  templateName: string;
+  variables: { [key: string]: any };
+  templatesDir: string;
+}): Promise<string> {
+  if (!templateExist(templateName, templatesDir)) {
     throw new Error(`invalid template name or directory: ${templateName}`);
   }
-
-  const templatesDir = join(cwd(), mailerConfig.templatesDir);
   const liquidEngine = new Liquid({
     cache: true,
     root: templatesDir,
