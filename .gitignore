@@ -16,6 +16,10 @@ out/
 !.env.project
 !.env.vault
 
+# config file
+**/config.json
+services/api/config.json
+
 # debug
 npm-debug.log*
 

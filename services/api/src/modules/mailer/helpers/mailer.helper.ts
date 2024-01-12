@@ -1,10 +1,8 @@
-import { mailer as mailerConfig } from "config.json";
-import { resolve } from "path";
-import { cwd } from "process";
+import { Transporter } from "nodemailer";
+import { CloudinaryConfig } from "src/app-context/context-type";
 import { isAccessiblePath } from "src/helpers/common.helper";
-import { localeImagesProcessing } from "./images-cid-processing.helper";
 import { readLiquidTemplate } from "./liquidjs.helper";
-import transporter from "./transporter";
+import { localeImagesProcessing } from "./local-images-processing.helper";
 
 export interface Attachement {
   fileName?: string;
@@ -29,13 +27,19 @@ export interface SendSimpleMailResponse {
   response: string;
 }
 
-export async function sendSimpleMail({
-  from,
-  to,
-  subject,
-  html,
-  medias,
-}: SimpleMailOptions): Promise<SendSimpleMailResponse> {
+export interface SendMailFromTemplateOptions {
+  cloudinaryOption: CloudinaryConfig;
+  transporter: Transporter;
+  templatesDir: string;
+  templateName: string;
+  variables: { [key: string]: any };
+  mailOptions: { from: Address; to: Address; subject: string };
+}
+
+export async function sendSimpleMail(
+  transporter: Transporter,
+  { from, to, subject, html, medias }: SimpleMailOptions
+): Promise<SendSimpleMailResponse> {
   try {
     const sentMessageInfo = await transporter.sendMail({
       from: from.name
@@ -64,21 +68,26 @@ export async function sendSimpleMail({
   }
 }
 
-export async function sendMailFromTemplate(
-  templateName: string,
-  variables: { [key: string]: any },
-  mailOptions: { from: Address; to: Address; subject: string }
-): Promise<SendSimpleMailResponse> {
-  const templateDir = resolve(cwd(), mailerConfig.templatesDir, templateName);
-
-  if (!isAccessiblePath(templateDir)) {
-    throw new Error(`invalid template, ${templateDir}`);
+export async function sendMailFromTemplate({
+  templatesDir,
+  templateName,
+  variables,
+  transporter,
+  cloudinaryOption,
+  mailOptions,
+}: SendMailFromTemplateOptions): Promise<SendSimpleMailResponse> {
+  if (!isAccessiblePath(templatesDir)) {
+    throw new Error(`invalid template, ${templatesDir}`);
   }
 
   const template = await readLiquidTemplate(templateName, variables);
-  const { html } = await localeImagesProcessing(template, templateDir);
+  const { html } = await localeImagesProcessing(
+    template,
+    templatesDir,
+    cloudinaryOption
+  );
 
-  const sendMail = await sendSimpleMail({
+  const sendMail = await sendSimpleMail(transporter, {
     from: mailOptions.from,
     to: mailOptions.to,
     subject: mailOptions.subject,

@@ -1,25 +1,25 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { database as dbConfig } from "config.json";
-import { join } from "path";
-import { cwd } from "process";
 import { DataSource } from "typeorm";
+import { buildAppContext } from "./app-context/app-context";
+import { TypeOrmConfigService } from "./app-context/type-orm-config";
 import { AppController } from "./app.controller";
 import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
   controllers: [AppController],
   imports: [
-    AuthModule,
-    TypeOrmModule.forRoot({
-      type: "sqlite",
-      database: join(cwd(), dbConfig.databaseDir, "db.sqlite"), //TODO: Store a path in a config file
-      logging: "all",
-      logger: "advanced-console",
-      manualInitialization: true,
-      entities: [join(__dirname, "/modules/**/*model.js")],
-      synchronize: process.env.NODE_ENV === "dev" ? true : false,
+    ConfigModule.forRoot({
+      ignoreEnvFile: true,
+      isGlobal: true,
+      ignoreEnvVars: true,
+      load: [buildAppContext],
     }),
+    TypeOrmModule.forRootAsync({
+      useClass: TypeOrmConfigService,
+    }),
+    AuthModule,
   ],
 })
 export class AppModule {
