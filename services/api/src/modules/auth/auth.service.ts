@@ -6,6 +6,7 @@ import { UserService } from "../user/user.service";
 import { SignupDto } from "./auth.dto";
 import {
   generateResetPasswordToken,
+  generateRowPublicId,
   generateTokenExpireAt,
   hashPassword,
   makeAccountActivationUrl,
@@ -38,6 +39,7 @@ export class AuthService {
         resetPasswordToken,
         webAppUrl
       );
+      const publicId = generateRowPublicId();
 
       if (user) {
         await this.userService.updateOneUser(user.id, {
@@ -49,6 +51,7 @@ export class AuthService {
           tokenExpireAt: generateTokenExpireAt(),
           roles: ["publisher"],
           isActive: false,
+          publicId,
         });
       } else {
         await this.userService.createUser({
@@ -60,6 +63,7 @@ export class AuthService {
           tokenExpireAt: generateTokenExpireAt(),
           roles: ["publisher"],
           isActive: false,
+          publicId,
         });
       }
 

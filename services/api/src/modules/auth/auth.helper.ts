@@ -1,6 +1,7 @@
 import { compareSync, hash } from "bcrypt";
 import { generateRandomString } from "src/helpers/common.helper";
 import { unixTimestamp } from "src/helpers/date.helper";
+import { v4 as uuidv4 } from "uuid";
 
 export function generateResetPasswordToken() {
   const randomString = generateRandomString(2);
@@ -29,4 +30,8 @@ export function makeAccountActivationUrl(token: string, webAppUrl) {
 
 export function makeResetPasswordUrl(token: string, webAppUrl: string) {
   return `${webAppUrl}/account`; // TODO: Finalize it in next task
+}
+
+export function generateRowPublicId(): string {
+  return uuidv4();
 }

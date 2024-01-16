@@ -12,6 +12,7 @@ interface CreateUserPayload {
   resetPasswordToken: string;
   tokenExpireAt: number;
   isActive: boolean;
+  publicId: string;
 }
 
 interface CreatePublisherPayload {
@@ -20,6 +21,7 @@ interface CreatePublisherPayload {
   webSiteUrl?: string;
   socialMediasUrl?: string[];
   bio?: string;
+  publicId: string;
 }
 
 @Injectable()
@@ -50,6 +52,7 @@ export class UserService {
         resetPasswordToken: true,
         tokenExpireAt: true,
         isActive: true,
+        publicId: true,
       },
       where: {
         email,
@@ -69,6 +72,7 @@ export class UserService {
         tokenExpireAt: true,
         isActive: true,
         password: withPassword,
+        publicId: true,
       },
       where: { id },
     });
