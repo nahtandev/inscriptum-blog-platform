@@ -1,11 +1,13 @@
 import { compareSync, hash } from "bcrypt";
-import { generateRandomString } from "src/helpers/common.helper";
+import {
+  generateRandomString,
+  obfuscateTextData,
+} from "src/helpers/common.helper";
 import { unixTimestamp } from "src/helpers/date.helper";
 import { v4 as uuidv4 } from "uuid";
 
 export function generateResetPasswordToken() {
-  const randomString = generateRandomString(2);
-  return Buffer.from(JSON.stringify(randomString)).toString("base64");
+  return generateRandomString(2);
 }
 
 export async function hashPassword(password: string) {
@@ -24,8 +26,17 @@ export function generateTokenExpireAt() {
   return unixTimestamp() + validityPeriod;
 }
 
-export function makeAccountActivationUrl(token: string, webAppUrl) {
-  return `${webAppUrl}/auth/signup/activate/${encodeURIComponent(token)}`;
+export function makeAccountActivationUrl({
+  token,
+  userPublicId,
+  webAppUrl,
+}: {
+  token: string;
+  userPublicId: string;
+  webAppUrl: string;
+}) {
+  const payload = obfuscateTextData(`${userPublicId}::${token}`);
+  return `${webAppUrl}/auth/signup/activate/${encodeURIComponent(payload)}`;
 }
 
 export function makeResetPasswordUrl(token: string, webAppUrl: string) {

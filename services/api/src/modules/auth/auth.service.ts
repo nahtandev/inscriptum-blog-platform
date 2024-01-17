@@ -35,11 +35,12 @@ export class AuthService {
     try {
       const passwordEncrypted = await hashPassword(password);
       const resetPasswordToken = generateResetPasswordToken();
-      const accountActivationUrl = makeAccountActivationUrl(
-        resetPasswordToken,
-        webAppUrl
-      );
       const publicId = generateRowPublicId();
+      const accountActivationUrl = makeAccountActivationUrl({
+        token: resetPasswordToken,
+        webAppUrl,
+        userPublicId: publicId,
+      });
 
       if (user) {
         await this.userService.updateOneUser(user.id, {
