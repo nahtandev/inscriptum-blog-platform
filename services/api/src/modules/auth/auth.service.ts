@@ -1,9 +1,15 @@
-import { BadGatewayException, ConflictException, Injectable } from "@nestjs/common";
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiConf } from "src/app-context/context-type";
+import { deobfuscateTextData } from "src/helpers/common.helper";
 import { MailerService } from "../mailer/mailer.service";
 import { UserService } from "../user/user.service";
-import { SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, SignupDto } from "./auth.dto";
 import {
   generateResetPasswordToken,
   generateRowPublicId,
@@ -86,7 +92,44 @@ export class AuthService {
     };
   }
 
-  signupConfirm(): string {
+  async signupConfirm({ payload }: ConfirmSignupDto) {
+    let payloadDecoded: string[];
+    // TODO: Resolce encode uri component fail. S'il manque un seul caractère dans la
+    // payload, même si c'est un =, cela doit âtre rejeté.
+
+    try {
+      payloadDecoded = deobfuscateTextData<string>(
+        decodeURIComponent(payload)
+      ).split("::");
+    } catch (error) {
+      return new BadGatewayException(
+        "Confirm Signup process failed, please retry",
+        {
+          cause: `[confirm-signup]: error to register a new user. Error: ${error}`,
+        }
+      );
+    }
+
+    if (payloadDecoded.length !== 2) {
+      return new BadRequestException({
+        success: false,
+        message: "Invalid payload",
+      });
+    }
+
+    const [userPublicId, token] = payloadDecoded;
+
+    const user = await this.userService.getOneUserByPublicId(userPublicId);
+
+    if (!user || user.resetPasswordToken !== token) {
+      return new BadRequestException({
+        success: false,
+        message: "Invalid payload",
+      });
+    }
+
+    console.log(user);
+
     return "Signup confirm succeful";
   }
 

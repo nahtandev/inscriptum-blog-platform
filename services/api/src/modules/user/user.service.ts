@@ -78,6 +78,24 @@ export class UserService {
     });
   }
 
+  async getOneUserByPublicId(publicId: string, withPassword = false) {
+    return this.userRepository.findOne({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        roles: true,
+        resetPasswordToken: true,
+        tokenExpireAt: true,
+        isActive: true,
+        password: withPassword,
+        publicId: true,
+      },
+      where: { publicId },
+    });
+  }
+
   async createPublisher(payload: CreatePublisherPayload) {
     return this.publisherRepository.save(payload);
   }
