@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, HttpCode, Post } from "@nestjs/common";
-import { SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, SignupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
@@ -14,8 +14,8 @@ export class AuthController {
 
   @Post("signup/confirm")
   @HttpCode(200)
-  signupConfirm() {
-    return this.authService.signupConfirm();
+  signupConfirm(@Body() payload: ConfirmSignupDto) {
+    return this.authService.signupConfirm(payload);
   }
 
   @Post("login")

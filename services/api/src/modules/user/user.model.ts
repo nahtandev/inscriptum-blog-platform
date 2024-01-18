@@ -34,6 +34,9 @@ export class UserEntity {
 
   @Column({ type: "boolean" })
   isActive: boolean;
+
+  @Column({ type: "varchar", length: 50 })
+  publicId: string;
 }
 
 @Entity("publisher")
@@ -56,4 +59,7 @@ export class PublisherEntity {
 
   @Column({ type: "varchar", length: 1000, nullable: true })
   bio?: string;
+
+  @Column({ type: "varchar", length: 50, unique: true })
+  publicId: string;
 }

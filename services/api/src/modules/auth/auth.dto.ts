@@ -21,3 +21,10 @@ export class SignupDto {
   @IsString()
   password: string;
 }
+
+export class ConfirmSignupDto {
+  @IsNotEmpty()
+  @IsDefined()
+  @IsString()
+  payload: string;
+}

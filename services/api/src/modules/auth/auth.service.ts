@@ -1,14 +1,24 @@
-import { BadGatewayException, ConflictException, Injectable } from "@nestjs/common";
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiConf } from "src/app-context/context-type";
+import { deobfuscateTextData } from "src/helpers/common.helper";
 import { MailerService } from "../mailer/mailer.service";
 import { UserService } from "../user/user.service";
-import { SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, SignupDto } from "./auth.dto";
 import {
   generateResetPasswordToken,
+  generateRowPublicId,
   generateTokenExpireAt,
   hashPassword,
   makeAccountActivationUrl,
+  makeDefaultUsername,
+  makeResetPasswordPayloadObfuscated,
+  validationTokenHasExpired,
 } from "./auth.helper";
 
 @Injectable()
@@ -34,10 +44,12 @@ export class AuthService {
     try {
       const passwordEncrypted = await hashPassword(password);
       const resetPasswordToken = generateResetPasswordToken();
-      const accountActivationUrl = makeAccountActivationUrl(
-        resetPasswordToken,
-        webAppUrl
-      );
+      const publicId = generateRowPublicId();
+      const accountActivationUrl = makeAccountActivationUrl({
+        token: resetPasswordToken,
+        webAppUrl,
+        userPublicId: publicId,
+      });
 
       if (user) {
         await this.userService.updateOneUser(user.id, {
@@ -49,6 +61,7 @@ export class AuthService {
           tokenExpireAt: generateTokenExpireAt(),
           roles: ["publisher"],
           isActive: false,
+          publicId,
         });
       } else {
         await this.userService.createUser({
@@ -60,6 +73,7 @@ export class AuthService {
           tokenExpireAt: generateTokenExpireAt(),
           roles: ["publisher"],
           isActive: false,
+          publicId,
         });
       }
 
@@ -81,8 +95,90 @@ export class AuthService {
     };
   }
 
-  signupConfirm(): string {
-    return "Signup confirm succeful";
+  async signupConfirm({ payload }: ConfirmSignupDto) {
+    const { webAppUrl } = this.configService.get<ApiConf>("apiConf");
+    let payloadDecoded: string;
+
+    const invalidPayloadException = () => {
+      throw new BadRequestException({
+        success: false,
+        message: "Invalid payload",
+      });
+    };
+
+    try {
+      payloadDecoded = decodeURIComponent(payload);
+    } catch {
+      return invalidPayloadException();
+    }
+
+    const payloadDeobfuscate =
+      deobfuscateTextData<string>(payloadDecoded).split("::");
+
+    if (payloadDeobfuscate.length !== 2) return invalidPayloadException();
+
+    const [userPublicId, token] = payloadDeobfuscate;
+
+    // Check if the payload sent is the same as that received
+    const payloadObfuscated = makeResetPasswordPayloadObfuscated(
+      userPublicId,
+      token
+    );
+    if (payloadObfuscated !== payloadDecoded) return invalidPayloadException();
+
+    const user = await this.userService.getOneUserByPublicId(userPublicId);
+
+    if (!user || user.resetPasswordToken !== token) {
+      return invalidPayloadException();
+    }
+
+    if (validationTokenHasExpired(user.tokenExpireAt)) {
+      const resetPasswordToken = generateResetPasswordToken();
+
+      await this.userService.updateOneUser(user.id, {
+        resetPasswordToken,
+        tokenExpireAt: generateTokenExpireAt(),
+      });
+
+      const activationLink = makeAccountActivationUrl({
+        token: resetPasswordToken,
+        webAppUrl,
+        userPublicId: user.publicId,
+      });
+
+      this.mailerService.sendAccountActivationMail({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        activationLink,
+      });
+
+      return {
+        success: false,
+        message:
+          "The validation link has expired. A new validation link  is sent; please confirm",
+      };
+    }
+
+    await this.userService.updateOneUser(user.id, {
+      resetPasswordToken: null,
+      tokenExpireAt: null,
+      isActive: true,
+    });
+
+    const defaultUsername = makeDefaultUsername(user.firstName, user.lastName); // TODO: Manage doublon
+
+    await this.userService.createPublisher({
+      user,
+      userName: defaultUsername,
+      publicId: generateRowPublicId(),
+    });
+
+    return {
+      success: true,
+      message: "Account verified successful",
+      isAuth: false,
+    };
   }
 
   login(): string {

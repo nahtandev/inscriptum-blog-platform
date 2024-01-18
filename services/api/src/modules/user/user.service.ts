@@ -12,6 +12,19 @@ interface CreateUserPayload {
   resetPasswordToken: string;
   tokenExpireAt: number;
   isActive: boolean;
+  publicId: string;
+}
+
+interface UpdateUserPayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  roles?: string[];
+  resetPasswordToken?: string;
+  tokenExpireAt?: number;
+  isActive?: boolean;
+  publicId?: string;
 }
 
 interface CreatePublisherPayload {
@@ -20,6 +33,7 @@ interface CreatePublisherPayload {
   webSiteUrl?: string;
   socialMediasUrl?: string[];
   bio?: string;
+  publicId: string;
 }
 
 @Injectable()
@@ -35,7 +49,7 @@ export class UserService {
     return this.userRepository.save(payload);
   }
 
-  async updateOneUser(id: number, payload: CreateUserPayload) {
+  async updateOneUser(id: number, payload: UpdateUserPayload) {
     return this.userRepository.update(id, payload);
   }
 
@@ -50,6 +64,7 @@ export class UserService {
         resetPasswordToken: true,
         tokenExpireAt: true,
         isActive: true,
+        publicId: true,
       },
       where: {
         email,
@@ -69,8 +84,27 @@ export class UserService {
         tokenExpireAt: true,
         isActive: true,
         password: withPassword,
+        publicId: true,
       },
       where: { id },
+    });
+  }
+
+  async getOneUserByPublicId(publicId: string, withPassword = false) {
+    return this.userRepository.findOne({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        roles: true,
+        resetPasswordToken: true,
+        tokenExpireAt: true,
+        isActive: true,
+        password: withPassword,
+        publicId: true,
+      },
+      where: { publicId },
     });
   }
 
