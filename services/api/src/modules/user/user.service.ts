@@ -15,6 +15,18 @@ interface CreateUserPayload {
   publicId: string;
 }
 
+interface UpdateUserPayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  roles?: string[];
+  resetPasswordToken?: string;
+  tokenExpireAt?: number;
+  isActive?: boolean;
+  publicId?: string;
+}
+
 interface CreatePublisherPayload {
   user: UserEntity;
   userName: string;
@@ -37,7 +49,7 @@ export class UserService {
     return this.userRepository.save(payload);
   }
 
-  async updateOneUser(id: number, payload: CreateUserPayload) {
+  async updateOneUser(id: number, payload: UpdateUserPayload) {
     return this.userRepository.update(id, payload);
   }
 

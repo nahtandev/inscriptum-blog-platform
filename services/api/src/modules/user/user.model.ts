@@ -60,6 +60,6 @@ export class PublisherEntity {
   @Column({ type: "varchar", length: 1000, nullable: true })
   bio?: string;
 
-  @Column({ type: "varchar", length: 50 })
+  @Column({ type: "varchar", length: 50, unique: true })
   publicId: string;
 }

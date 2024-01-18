@@ -26,6 +26,11 @@ export function generateTokenExpireAt() {
   return unixTimestamp() + validityPeriod;
 }
 
+export function validationTokenHasExpired(tokenExpireAt: number): boolean {
+  if (tokenExpireAt <= unixTimestamp()) return true;
+  return false;
+}
+
 export function makeAccountActivationUrl({
   token,
   userPublicId,
@@ -35,8 +40,15 @@ export function makeAccountActivationUrl({
   userPublicId: string;
   webAppUrl: string;
 }) {
-  const payload = obfuscateTextData(`${userPublicId}::${token}`);
+  const payload = makeResetPasswordPayloadObfuscated(userPublicId, token);
   return `${webAppUrl}/auth/signup/activate/${encodeURIComponent(payload)}`;
+}
+
+export function makeResetPasswordPayloadObfuscated(
+  userPublicId: string,
+  token: string
+) {
+  return obfuscateTextData(`${userPublicId}::${token}`);
 }
 
 export function makeResetPasswordUrl(token: string, webAppUrl: string) {
@@ -45,4 +57,8 @@ export function makeResetPasswordUrl(token: string, webAppUrl: string) {
 
 export function generateRowPublicId(): string {
   return uuidv4();
+}
+
+export function makeDefaultUsername(firstName: string, lastName: string) {
+  return `${firstName.toLowerCase()}${lastName.toLocaleLowerCase()}`;
 }

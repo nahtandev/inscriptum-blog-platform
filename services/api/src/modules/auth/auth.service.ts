@@ -16,6 +16,9 @@ import {
   generateTokenExpireAt,
   hashPassword,
   makeAccountActivationUrl,
+  makeDefaultUsername,
+  makeResetPasswordPayloadObfuscated,
+  validationTokenHasExpired,
 } from "./auth.helper";
 
 @Injectable()
@@ -93,44 +96,89 @@ export class AuthService {
   }
 
   async signupConfirm({ payload }: ConfirmSignupDto) {
-    let payloadDecoded: string[];
-    // TODO: Resolce encode uri component fail. S'il manque un seul caractère dans la
-    // payload, même si c'est un =, cela doit âtre rejeté.
+    const { webAppUrl } = this.configService.get<ApiConf>("apiConf");
+    let payloadDecoded: string;
 
-    try {
-      payloadDecoded = deobfuscateTextData<string>(
-        decodeURIComponent(payload)
-      ).split("::");
-    } catch (error) {
-      return new BadGatewayException(
-        "Confirm Signup process failed, please retry",
-        {
-          cause: `[confirm-signup]: error to register a new user. Error: ${error}`,
-        }
-      );
-    }
-
-    if (payloadDecoded.length !== 2) {
-      return new BadRequestException({
+    const invalidPayloadException = () => {
+      throw new BadRequestException({
         success: false,
         message: "Invalid payload",
       });
+    };
+
+    try {
+      payloadDecoded = decodeURIComponent(payload);
+    } catch {
+      return invalidPayloadException();
     }
 
-    const [userPublicId, token] = payloadDecoded;
+    const payloadDeobfuscate =
+      deobfuscateTextData<string>(payloadDecoded).split("::");
+
+    if (payloadDeobfuscate.length !== 2) return invalidPayloadException();
+
+    const [userPublicId, token] = payloadDeobfuscate;
+
+    // Check if the payload sent is the same as that received
+    const payloadObfuscated = makeResetPasswordPayloadObfuscated(
+      userPublicId,
+      token
+    );
+    if (payloadObfuscated !== payloadDecoded) return invalidPayloadException();
 
     const user = await this.userService.getOneUserByPublicId(userPublicId);
 
     if (!user || user.resetPasswordToken !== token) {
-      return new BadRequestException({
-        success: false,
-        message: "Invalid payload",
-      });
+      return invalidPayloadException();
     }
 
-    console.log(user);
+    if (validationTokenHasExpired(user.tokenExpireAt)) {
+      const resetPasswordToken = generateResetPasswordToken();
 
-    return "Signup confirm succeful";
+      await this.userService.updateOneUser(user.id, {
+        resetPasswordToken,
+        tokenExpireAt: generateTokenExpireAt(),
+      });
+
+      const activationLink = makeAccountActivationUrl({
+        token: resetPasswordToken,
+        webAppUrl,
+        userPublicId: user.publicId,
+      });
+
+      this.mailerService.sendAccountActivationMail({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        activationLink,
+      });
+
+      return {
+        success: false,
+        message:
+          "The validation link has expired. A new validation link  is sent; please confirm",
+      };
+    }
+
+    await this.userService.updateOneUser(user.id, {
+      resetPasswordToken: null,
+      tokenExpireAt: null,
+      isActive: true,
+    });
+
+    const defaultUsername = makeDefaultUsername(user.firstName, user.lastName); // TODO: Manage doublon
+
+    await this.userService.createPublisher({
+      user,
+      userName: defaultUsername,
+      publicId: generateRowPublicId(),
+    });
+
+    return {
+      success: true,
+      message: "Account verified successful",
+      isAuth: false,
+    };
   }
 
   login(): string {
