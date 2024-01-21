@@ -7,5 +7,12 @@
   "database": {
     "dir": "data/database",
     "name": "database.sqlite"
+  },
+  "jwt": {
+    "keyDir": "src/app-context/jwt",
+    "privateKeyFileName": "jwt-private.key",
+    "publicKeyFileName": "jwt-public.key.pub",
+    "algorithm": "RS256",
+    "asymmetricKeyType": "rsa"
   }
 }

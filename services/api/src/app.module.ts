@@ -16,9 +16,11 @@ import { AuthModule } from "./modules/auth/auth.module";
       ignoreEnvVars: true,
       load: [buildAppContext],
     }),
+
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
     }),
+
     AuthModule,
   ],
 })

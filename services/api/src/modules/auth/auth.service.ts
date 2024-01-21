@@ -2,21 +2,28 @@ import {
   BadGatewayException,
   BadRequestException,
   ConflictException,
+  HttpStatus,
   Injectable,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 import { ApiConf } from "src/app-context/context-type";
 import { deobfuscateTextData } from "src/helpers/common.helper";
 import { MailerService } from "../mailer/mailer.service";
+import { UserEntity } from "../user/user.model";
 import { UserService } from "../user/user.service";
-import { ConfirmSignupDto, SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, LoginDto, SignupDto } from "./auth.dto";
 import {
   generateResetPasswordToken,
   generateRowPublicId,
   generateTokenExpireAt,
   hashPassword,
+  isSamePassword,
   makeAccountActivationUrl,
   makeDefaultUsername,
+  makeRefreshTokenId,
+  makeRefreshTokenPayload,
   makeResetPasswordPayloadObfuscated,
   validationTokenHasExpired,
 } from "./auth.helper";
@@ -26,7 +33,8 @@ export class AuthService {
   constructor(
     private mailerService: MailerService,
     private userService: UserService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private jwtService: JwtService
   ) {}
 
   async signup(payload: SignupDto) {
@@ -35,9 +43,11 @@ export class AuthService {
     const user = await this.userService.getOneUserByEmail(email);
 
     if (user?.isActive) {
-      throw new ConflictException("This email address is linked and account.", {
-        description:
-          "The email provided is linked an account. Try to signin or use another email",
+      throw new ConflictException({
+        statusCode: HttpStatus.CONFLICT,
+        success: false,
+        code: "EMAIL_ALREADY_EXISTS",
+        message: "The email provided is already linked to an account",
       });
     }
 
@@ -90,6 +100,7 @@ export class AuthService {
     }
 
     return {
+      statusCode: HttpStatus.CREATED,
       success: true,
       message: "Account created succeful. Please, confirm email",
     };
@@ -101,7 +112,9 @@ export class AuthService {
 
     const invalidPayloadException = () => {
       throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
         success: false,
+        code: "INVALID_PAYLOAD",
         message: "Invalid payload",
       });
     };
@@ -133,30 +146,18 @@ export class AuthService {
     }
 
     if (validationTokenHasExpired(user.tokenExpireAt)) {
-      const resetPasswordToken = generateResetPasswordToken();
-
-      await this.userService.updateOneUser(user.id, {
-        resetPasswordToken,
-        tokenExpireAt: generateTokenExpireAt(),
-      });
-
-      const activationLink = makeAccountActivationUrl({
-        token: resetPasswordToken,
+      await inactiveAccountProccess({
+        user,
+        userService: this.userService,
         webAppUrl,
-        userPublicId: user.publicId,
-      });
-
-      this.mailerService.sendAccountActivationMail({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        activationLink,
+        mailerService: this.mailerService,
       });
 
       return {
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         success: false,
-        message:
-          "The validation link has expired. A new validation link  is sent; please confirm",
+        code: "VALIDATION_PAYLOAD_EXPIRED",
+        message: "The validation link has expired.",
       };
     }
 
@@ -166,7 +167,7 @@ export class AuthService {
       isActive: true,
     });
 
-    const defaultUsername = makeDefaultUsername(user.firstName, user.lastName); // TODO: Manage doublon
+    const defaultUsername = makeDefaultUsername(user.firstName, user.lastName); // TODO: Manage duplicate
 
     await this.userService.createPublisher({
       user,
@@ -175,14 +176,76 @@ export class AuthService {
     });
 
     return {
+      statusCode: HttpStatus.OK,
       success: true,
       message: "Account verified successful",
-      isAuth: false,
+      data: {
+        isAuth: false,
+      },
     };
   }
 
-  login(): string {
-    return "Login succeful";
+  async login({ email, password }: LoginDto) {
+    const invalidCredentialException = () => {
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        success: false,
+        code: "INVALID_CREDENTIALS",
+        message: "Invalid credentials",
+      });
+    };
+    const webAppUrl = this.configService.get<ApiConf>("apiConf").webAppUrl;
+    const user = await this.userService.getOneUserByEmail(email, true);
+
+    if (!user) return invalidCredentialException();
+
+    if (!isSamePassword(password, user.password)) {
+      return invalidCredentialException();
+    }
+
+    if (!user.isActive) {
+      await inactiveAccountProccess({
+        user,
+        userService: this.userService,
+        webAppUrl,
+        mailerService: this.mailerService,
+      });
+
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        success: false,
+        code: "INACTIVE_ACCOUNT",
+        message: "Account not activate; a new validation mail is sent",
+      });
+    }
+
+    const payload = {
+      id: user.publicId,
+      groups: user.roles,
+    };
+    const refreshTokenId = makeRefreshTokenId();
+    const refreshTokenPayload = {
+      subtoken: makeRefreshTokenPayload({
+        userPublicId: user.publicId,
+        lastRefreshTokenId: refreshTokenId,
+      }),
+    };
+
+    await this.userService.updateOneUser(user.id, {
+      lastRefreshTokenId: refreshTokenId,
+    });
+
+    const access_token = await this.jwtService.signAsync(payload);
+    const refresh_token = await this.jwtService.signAsync(refreshTokenPayload);
+
+    return {
+      statusCode: HttpStatus.OK,
+      success: true,
+      data: {
+        access_token,
+        refresh_token,
+      },
+    };
   }
 
   logout(): string {
@@ -192,4 +255,36 @@ export class AuthService {
   resetPassword(): string {
     return "Password reset succeful";
   }
+}
+
+async function inactiveAccountProccess({
+  userService,
+  user,
+  webAppUrl,
+  mailerService,
+}: {
+  userService: UserService;
+  mailerService: MailerService;
+  webAppUrl: string;
+  user: UserEntity;
+}) {
+  const resetPasswordToken = generateResetPasswordToken();
+
+  await userService.updateOneUser(user.id, {
+    resetPasswordToken,
+    tokenExpireAt: generateTokenExpireAt(),
+  });
+
+  const activationLink = makeAccountActivationUrl({
+    token: resetPasswordToken,
+    webAppUrl,
+    userPublicId: user.publicId,
+  });
+
+  mailerService.sendAccountActivationMail({
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    activationLink,
+  });
 }

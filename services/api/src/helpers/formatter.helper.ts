@@ -1,4 +1,4 @@
-export function toStringValue(val: any): string {
+export function toStringValue<T extends string>(val: any): T {
   if (val === null || val === undefined) {
     throw new Error("[formatter]: cannot format a null or undefined value");
   }
@@ -8,7 +8,7 @@ export function toStringValue(val: any): string {
   if (stringValue === "[object Object]") {
     throw new Error("[formatter]: cannot format an object to string");
   }
-  return stringValue;
+  return stringValue as T;
 }
 
 export function toStringOrUndefValue(val: any): string | undefined {

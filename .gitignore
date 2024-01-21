@@ -38,3 +38,7 @@ next-env.d.ts
 
 # database file
 services/api/data/*
+
+# jwt key
+jwt-private.key
+jwt-public.key.pub
