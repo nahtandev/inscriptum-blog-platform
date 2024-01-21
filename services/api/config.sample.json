@@ -9,8 +9,10 @@
     "name": "database.sqlite"
   },
   "jwt": {
-    "keyDir": "app-context/jwt",
-    "keyFileName": "jwt-private.key",
+    "keyDir": "src/app-context/jwt",
+    "privateKeyFileName": "jwt-private.key",
+    "publicKeyFileName": "jwt-public.key.pub",
+    "algorithm": "RS256",
     "asymmetricKeyType": "rsa"
   }
 }
