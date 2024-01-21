@@ -1,9 +1,11 @@
 import { compareSync, hash } from "bcrypt";
 import {
+  deobfuscateTextData,
   generateRandomString,
   obfuscateTextData,
 } from "src/helpers/common.helper";
 import { unixTimestamp } from "src/helpers/date.helper";
+import { RefreshTokenPayload } from "src/types/common-types";
 import { v4 as uuidv4 } from "uuid";
 
 export function generateResetPasswordToken() {
@@ -61,4 +63,25 @@ export function generateRowPublicId(): string {
 
 export function makeDefaultUsername(firstName: string, lastName: string) {
   return `${firstName.toLowerCase()}${lastName.toLocaleLowerCase()}`;
+}
+
+export function makeRefreshTokenPayload({
+  userPublicId,
+  lastRefreshTokenId,
+}: RefreshTokenPayload) {
+  return obfuscateTextData(`${userPublicId}::${lastRefreshTokenId}`);
+}
+
+export function makeRefreshTokenId() {
+  return generateRandomString(2);
+}
+
+export function decodeRefreshToken(refreshToken): RefreshTokenPayload {
+  const [publicId, lastRefreshTokenId] =
+    deobfuscateTextData<string>(refreshToken).split("::");
+
+  return {
+    userPublicId: publicId,
+    lastRefreshTokenId,
+  };
 }

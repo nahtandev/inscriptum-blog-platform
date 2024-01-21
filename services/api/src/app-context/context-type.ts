@@ -1,3 +1,5 @@
+import { KeyType } from "crypto";
+import { Algorithm } from "jsonwebtoken";
 import { Transporter } from "nodemailer";
 
 export interface AppContext {
@@ -36,10 +38,20 @@ export interface ApiConf {
   listenPort: string;
   webAppUrl: string;
   nodeEnv: string;
+  jwtConfig: JwtConfig;
+  apiUrl: string;
 }
 
 export interface CloudinaryConfig {
   cloudName: string;
   apiKey: string;
   apiSecret: string;
+}
+
+export interface JwtConfig {
+  secret: string;
+  privateKey: string;
+  expiresIn: number;
+  algorithm: Algorithm;
+  asymmetricKeyType: KeyType;
 }

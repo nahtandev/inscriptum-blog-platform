@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, HttpCode, Post } from "@nestjs/common";
-import { ConfirmSignupDto, SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, LoginDto, SignupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
@@ -19,8 +19,9 @@ export class AuthController {
   }
 
   @Post("login")
-  login() {
-    return this.authService.login();
+  @HttpCode(200)
+  login(@Body() payload: LoginDto) {
+    return this.authService.login(payload);
   }
 
   @Delete("logout")

@@ -1,6 +1,9 @@
+import { KeyType } from "crypto";
 import { config as loadEnvVariables } from "dotenv";
+import { Algorithm } from "jsonwebtoken";
 import { createTransport } from "nodemailer";
-import { env } from "process";
+import { join } from "path";
+import { cwd, env } from "process";
 import {
   toBoolValue,
   toNumberValue,
@@ -11,16 +14,21 @@ import {
   AppContext,
   CloudinaryConfig,
   DatabaseConf,
+  JwtConfig,
   MailConf,
   MailSender,
   SmtpConf,
 } from "./context-type";
+import {
+  generateRsaJwtKeys,
+  readJwtPrivateKey,
+} from "./jwt/jwt-rsa-keys-reader-writer";
 import { readConfigFile } from "./load-configuration";
 
 loadEnvVariables();
 
 export async function buildAppContext(): Promise<AppContext> {
-  const { mailer, database } = await readConfigFile();
+  const { mailer, database, jwt } = readConfigFile();
 
   const smtpConf: SmtpConf = {
     host: toStringValue(env.SMTP_HOST),
@@ -46,10 +54,44 @@ export async function buildAppContext(): Promise<AppContext> {
     dbName: toStringValue(database.name),
   };
 
+  const jwtConf: {
+    keyDir: string;
+    privateKeyFileName: string;
+    publicKeyFileName: string;
+    algorithm: Algorithm;
+    asymmetricKeyType: KeyType;
+  } = {
+    keyDir: toStringValue(jwt.keyDir),
+    privateKeyFileName: toStringValue(jwt.privateKeyFileName),
+    publicKeyFileName: toStringValue(jwt.publicKeyFileName),
+    algorithm: toStringValue<Algorithm>(jwt.algorithm),
+    asymmetricKeyType: toStringValue<KeyType>(jwt.asymmetricKeyType),
+  };
+
+  const jwtKeyDir = join(cwd(), jwtConf.keyDir);
+  const jwtSecret = toStringValue(env.JWT_SECRET);
+
+  generateRsaJwtKeys({
+    secret: jwtSecret,
+    keyDir: jwt.keyDir,
+    privateKeyFileName: jwtConf.privateKeyFileName,
+    publicKeyFileName: jwt.publicKeyFileName,
+  });
+
+  const jwtConfig: JwtConfig = {
+    privateKey: readJwtPrivateKey(jwtKeyDir, jwtConf.privateKeyFileName),
+    secret: jwtSecret,
+    expiresIn: toNumberValue(env.JWT_EXPIRES_IN),
+    algorithm: jwtConf.algorithm,
+    asymmetricKeyType: jwtConf.asymmetricKeyType,
+  };
+
   const apiConf: ApiConf = {
+    jwtConfig,
     listenPort: toStringValue(env.LISTEN_PORT),
     nodeEnv: toStringValue(env.NODE_ENV),
     webAppUrl: toStringValue(env.WEB_APP_URL),
+    apiUrl: toStringValue(env.API_URL),
   };
 
   const mailTransporter = createTransport({

@@ -28,3 +28,15 @@ export class ConfirmSignupDto {
   @IsString()
   payload: string;
 }
+
+export class LoginDto {
+  @IsNotEmpty()
+  @IsDefined()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @IsDefined()
+  @IsString()
+  password: string;
+}

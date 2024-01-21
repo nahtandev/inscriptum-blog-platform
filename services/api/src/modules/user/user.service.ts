@@ -25,6 +25,7 @@ interface UpdateUserPayload {
   tokenExpireAt?: number;
   isActive?: boolean;
   publicId?: string;
+  lastRefreshTokenId?: string;
 }
 
 interface CreatePublisherPayload {
@@ -53,7 +54,10 @@ export class UserService {
     return this.userRepository.update(id, payload);
   }
 
-  async getOneUserByEmail(email: string): Promise<UserEntity> {
+  async getOneUserByEmail(
+    email: string,
+    withPassword = false
+  ): Promise<UserEntity> {
     return this.userRepository.findOne({
       select: {
         id: true,
@@ -65,6 +69,7 @@ export class UserService {
         tokenExpireAt: true,
         isActive: true,
         publicId: true,
+        password: withPassword,
       },
       where: {
         email,
