@@ -51,7 +51,8 @@ export interface CloudinaryConfig {
 export interface JwtConfig {
   secret: string;
   privateKey: string;
-  expiresIn: number;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
   algorithm: Algorithm;
   asymmetricKeyType: KeyType;
 }

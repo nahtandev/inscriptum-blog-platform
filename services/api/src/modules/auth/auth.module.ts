@@ -22,7 +22,6 @@ import { AuthService } from "./auth.service";
             passphrase: jwtConfig.secret,
             key: jwtConfig.privateKey,
           },
-          expiresIn: jwtConfig.expiresIn,
           global: true,
           signOptions: {
             algorithm: jwtConfig.algorithm,

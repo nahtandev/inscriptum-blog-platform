@@ -1,4 +1,10 @@
-import { IsDefined, IsEmail, IsNotEmpty, IsString } from "class-validator";
+import {
+  IsDefined,
+  IsEmail,
+  IsJWT,
+  IsNotEmpty,
+  IsString,
+} from "class-validator";
 
 export class SignupDto {
   @IsNotEmpty()
@@ -39,4 +45,16 @@ export class LoginDto {
   @IsDefined()
   @IsString()
   password: string;
+}
+
+export class RenewJwtDto {
+  @IsNotEmpty()
+  @IsDefined()
+  @IsJWT()
+  accessToken: string;
+
+  @IsNotEmpty()
+  @IsDefined()
+  @IsJWT()
+  refreshToken: string;
 }

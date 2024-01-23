@@ -81,7 +81,8 @@ export async function buildAppContext(): Promise<AppContext> {
   const jwtConfig: JwtConfig = {
     privateKey: readJwtPrivateKey(jwtKeyDir, jwtConf.privateKeyFileName),
     secret: jwtSecret,
-    expiresIn: toNumberValue(env.JWT_EXPIRES_IN),
+    accessTokenExpiresIn: toNumberValue(env.JWT_ACCESS_TOKEN_EXPIRES_IN),
+    refreshTokenExpiresIn: toNumberValue(env.JWT_REFRESH_TOKEN_EXPIRES_IN),
     algorithm: jwtConf.algorithm,
     asymmetricKeyType: jwtConf.asymmetricKeyType,
   };

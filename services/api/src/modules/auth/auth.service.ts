@@ -7,14 +7,21 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
+import { JsonWebTokenError, JwtService, TokenExpiredError } from "@nestjs/jwt";
 import { ApiConf } from "src/app-context/context-type";
 import { deobfuscateTextData } from "src/helpers/common.helper";
+import {
+  AccessTokenPayload,
+  EncodedRefreshTokenPayload,
+  JwtTokenDecoded,
+} from "src/types/common-types";
 import { MailerService } from "../mailer/mailer.service";
 import { UserEntity } from "../user/user.model";
 import { UserService } from "../user/user.service";
-import { ConfirmSignupDto, LoginDto, SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, LoginDto, RenewJwtDto, SignupDto } from "./auth.dto";
 import {
+  decodeRefreshToken,
+  generateJwtId,
   generateResetPasswordToken,
   generateRowPublicId,
   generateTokenExpireAt,
@@ -22,9 +29,9 @@ import {
   isSamePassword,
   makeAccountActivationUrl,
   makeDefaultUsername,
-  makeRefreshTokenId,
   makeRefreshTokenPayload,
   makeResetPasswordPayloadObfuscated,
+  tokenExpires,
   validationTokenHasExpired,
 } from "./auth.helper";
 
@@ -194,7 +201,7 @@ export class AuthService {
         message: "Invalid credentials",
       });
     };
-    const webAppUrl = this.configService.get<ApiConf>("apiConf").webAppUrl;
+    const { webAppUrl, jwtConfig } = this.configService.get<ApiConf>("apiConf");
     const user = await this.userService.getOneUserByEmail(email, true);
 
     if (!user) return invalidCredentialException();
@@ -223,7 +230,7 @@ export class AuthService {
       id: user.publicId,
       groups: user.roles,
     };
-    const refreshTokenId = makeRefreshTokenId();
+    const refreshTokenId = generateJwtId();
     const refreshTokenPayload = {
       subtoken: makeRefreshTokenPayload({
         userPublicId: user.publicId,
@@ -235,8 +242,15 @@ export class AuthService {
       lastRefreshTokenId: refreshTokenId,
     });
 
-    const access_token = await this.jwtService.signAsync(payload);
-    const refresh_token = await this.jwtService.signAsync(refreshTokenPayload);
+    const access_token = await this.jwtService.signAsync(payload, {
+      jwtid: generateJwtId(),
+      expiresIn: jwtConfig.accessTokenExpiresIn,
+    });
+
+    const refresh_token = await this.jwtService.signAsync(refreshTokenPayload, {
+      jwtid: refreshTokenId,
+      expiresIn: jwtConfig.refreshTokenExpiresIn,
+    });
 
     return {
       statusCode: HttpStatus.OK,
@@ -255,6 +269,76 @@ export class AuthService {
   resetPassword(): string {
     return "Password reset succeful";
   }
+
+  async renewJwt({ accessToken, refreshToken }: RenewJwtDto) {
+    let decodedAccessToken: JwtTokenDecoded<AccessTokenPayload>;
+    let decodedRefreshToken: JwtTokenDecoded<EncodedRefreshTokenPayload>;
+
+    try {
+      decodedRefreshToken =
+        await this.jwtService.verifyAsync<
+          JwtTokenDecoded<EncodedRefreshTokenPayload>
+        >(refreshToken);
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        throw new BadRequestException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          success: false,
+          code: "INVALID_ACCESS_TOKEN",
+          message: "The refresh token provided is in the wrong format",
+        });
+      }
+
+      if (error instanceof TokenExpiredError) {
+        throw new BadRequestException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          success: false,
+          code: "EXPIRED_REFRESH_TOKEN",
+          message: "The refresh token provided has expired",
+        });
+      }
+    }
+
+    const { userPublicId, lastRefreshTokenId } = decodeRefreshToken(
+      decodedRefreshToken.payload
+    );
+
+    const user = await this.userService.getOneUserByPublicId(userPublicId);
+
+    if (user.lastRefreshTokenId !== lastRefreshTokenId) {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        success: false,
+        code: "EXPIRED_REFRESH_TOKEN",
+        message: "The refresh token provided has expired",
+      });
+    }
+
+    try {
+      decodedAccessToken = await this.jwtService.verifyAsync<
+        JwtTokenDecoded<AccessTokenPayload>
+      >(accessToken, {
+        complete: true,
+      });
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        throw new BadRequestException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          success: false,
+          code: "INVALID_ACCESS_TOKEN",
+          message: "The access token provided is in the wrong format",
+        });
+      }
+    }
+
+    if (!tokenExpires(decodedAccessToken.header.exp)) {
+      // Black list token before generate a new
+    }
+  }
+
+  async #generateRefreshToken() {}
+
+  async #generateAccessToken() {}
 }
 
 async function inactiveAccountProccess({

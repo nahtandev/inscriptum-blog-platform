@@ -5,7 +5,10 @@ import {
   obfuscateTextData,
 } from "src/helpers/common.helper";
 import { unixTimestamp } from "src/helpers/date.helper";
-import { RefreshTokenPayload } from "src/types/common-types";
+import {
+  EncodedRefreshTokenPayload,
+  RefreshTokenPayload,
+} from "src/types/common-types";
 import { v4 as uuidv4 } from "uuid";
 
 export function generateResetPasswordToken() {
@@ -72,16 +75,23 @@ export function makeRefreshTokenPayload({
   return obfuscateTextData(`${userPublicId}::${lastRefreshTokenId}`);
 }
 
-export function makeRefreshTokenId() {
-  return generateRandomString(2);
+export function generateJwtId() {
+  return generateRandomString();
 }
 
-export function decodeRefreshToken(refreshToken): RefreshTokenPayload {
-  const [publicId, lastRefreshTokenId] =
-    deobfuscateTextData<string>(refreshToken).split("::");
+export function decodeRefreshToken(
+  refreshTokenPayloadEncoded: EncodedRefreshTokenPayload
+): RefreshTokenPayload {
+  const [publicId, lastRefreshTokenId] = deobfuscateTextData<string>(
+    refreshTokenPayloadEncoded.subtoken
+  ).split("::");
 
   return {
     userPublicId: publicId,
     lastRefreshTokenId,
   };
+}
+
+export function tokenExpires(expiresIn: number) {
+  return expiresIn <= unixTimestamp();
 }
