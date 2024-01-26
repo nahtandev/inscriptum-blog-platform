@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, HttpCode, Post } from "@nestjs/common";
-import { ConfirmSignupDto, LoginDto, SignupDto } from "./auth.dto";
+import { ConfirmSignupDto, LoginDto, RenewJwtDto, SignupDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
@@ -22,6 +22,12 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() payload: LoginDto) {
     return this.authService.login(payload);
+  }
+
+  @Post("jwt")
+  @HttpCode(200)
+  renewJwt(@Body() payload: RenewJwtDto) {
+    return this.authService.renewJwt(payload);
   }
 
   @Delete("logout")

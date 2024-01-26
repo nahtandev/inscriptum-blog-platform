@@ -7,17 +7,31 @@ export interface RefreshTokenPayload {
   lastRefreshTokenId: string;
 }
 
-export interface EncodedRefreshTokenPayload {
+export interface EncodedRefreshTokenPayload extends JwtDefaultPayload {
   subtoken: string;
 }
 
-export interface AccessTokenPayload {
+export interface AccessTokenPayload extends JwtDefaultPayload {
   id: string;
   groups: string[];
 }
 
-export interface JwtTokenDecoded<TPayload = any> {
+export interface JwtTokenDecoded<TPayload> {
   header: Obj;
   signature: Obj;
   payload: TPayload;
 }
+
+export interface JwtDefaultPayload {
+  iat: number;
+  exp: number;
+  aud: string[];
+  iss: string;
+  jti: string;
+}
+
+
+
+
+
+

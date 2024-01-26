@@ -1,27 +1,28 @@
 {
-    "name": "inscriptum-platform",
-    "private": true,
-    "author": "Nathan Dev",
-    "version": "0.0.0",
-    "scripts": {
-        "commitlint": "commitlint",
-        "packages:format": "npx prettier --write packages/",
-        "packages:format-check": "npx prettier --check packages/",
-        "api:dev": "cd services/api && npm run start:dev",
-        "dashboard:dev": "cd apps/dashboard && npm run dev",
-        "public-site:dev": "cd apps/public-site && npm run dev",
-        "dev": "conc -n 'SERVER_API,DASHBOARD,PUBLIC_SITE' -c 'magenta.bold,green.bold,blue.bold' 'npm run api:dev' 'npm run dashboard:dev' 'npm run public-site:dev'"
-    },
-    "devDependencies": {
-        "@commitlint/cli": "^17.7.1",
-        "@commitlint/config-conventional": "^17.7.0",
-        "concurrently": "^8.2.2",
-        "eslint": "8.49.0",
-        "prettier": "3.0.3"
-    },
-    "workspaces": [
-        "apps/*",
-        "packages/*",
-        "services/*"
-    ]
+  "name": "inscriptum-platform",
+  "private": true,
+  "author": "Nathan Dev",
+  "version": "0.0.0",
+  "scripts": {
+    "commitlint": "commitlint",
+    "packages:format": "npx prettier --write packages/",
+    "packages:format-check": "npx prettier --check packages/",
+    "api:dev": "cd services/api && npm run start:dev",
+    "dashboard:dev": "cd apps/dashboard && npm run dev",
+    "public-site:dev": "cd apps/public-site && npm run dev",
+    "api-cache-server:start": "cd packages/api-cache-server && docker-compose up",
+    "dev": "conc -n 'API_CACHE_SERVER,SERVER_API,DASHBOARD,PUBLIC_SITE' -c 'yellow.bold,magenta.bold,green.bold,blue.bold' -k  'npm run api-cache-server:start' 'npm run api:dev' 'npm run dashboard:dev' 'npm run public-site:dev'"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.7.1",
+    "@commitlint/config-conventional": "^17.7.0",
+    "concurrently": "^8.2.2",
+    "eslint": "8.49.0",
+    "prettier": "3.2.4"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ]
 }

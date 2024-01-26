@@ -226,31 +226,8 @@ export class AuthService {
       });
     }
 
-    const payload = {
-      id: user.publicId,
-      groups: user.roles,
-    };
-    const refreshTokenId = generateJwtId();
-    const refreshTokenPayload = {
-      subtoken: makeRefreshTokenPayload({
-        userPublicId: user.publicId,
-        lastRefreshTokenId: refreshTokenId,
-      }),
-    };
-
-    await this.userService.updateOneUser(user.id, {
-      lastRefreshTokenId: refreshTokenId,
-    });
-
-    const access_token = await this.jwtService.signAsync(payload, {
-      jwtid: generateJwtId(),
-      expiresIn: jwtConfig.accessTokenExpiresIn,
-    });
-
-    const refresh_token = await this.jwtService.signAsync(refreshTokenPayload, {
-      jwtid: refreshTokenId,
-      expiresIn: jwtConfig.refreshTokenExpiresIn,
-    });
+    const access_token = await this.#generateAccessToken(user);
+    const refresh_token = await this.#generateRefreshToken(user);
 
     return {
       statusCode: HttpStatus.OK,
@@ -262,11 +239,11 @@ export class AuthService {
     };
   }
 
-  logout(): string {
+  async logout() {
     return "Logout succeful";
   }
 
-  resetPassword(): string {
+  async resetPassword() {
     return "Password reset succeful";
   }
 
@@ -274,29 +251,36 @@ export class AuthService {
     let decodedAccessToken: JwtTokenDecoded<AccessTokenPayload>;
     let decodedRefreshToken: JwtTokenDecoded<EncodedRefreshTokenPayload>;
 
+    const expiredRefreshTokenException = () => {
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        success: false,
+        code: "EXPIRED_REFRESH_TOKEN",
+        message: "The refresh token provided has expired",
+      });
+    };
+
+    const { jwtBlackList } =
+      this.configService.get<ApiConf>("apiConf").jwtConfig;
+
     try {
-      decodedRefreshToken =
-        await this.jwtService.verifyAsync<
-          JwtTokenDecoded<EncodedRefreshTokenPayload>
-        >(refreshToken);
+      decodedRefreshToken = await this.jwtService.verifyAsync(refreshToken, {
+        complete: true,
+      });
     } catch (error) {
-      if (error instanceof JsonWebTokenError) {
-        throw new BadRequestException({
-          statusCode: HttpStatus.BAD_REQUEST,
-          success: false,
-          code: "INVALID_ACCESS_TOKEN",
-          message: "The refresh token provided is in the wrong format",
-        });
+      if (error instanceof TokenExpiredError) {
+        return expiredRefreshTokenException();
       }
 
-      if (error instanceof TokenExpiredError) {
-        throw new BadRequestException({
-          statusCode: HttpStatus.BAD_REQUEST,
-          success: false,
-          code: "EXPIRED_REFRESH_TOKEN",
-          message: "The refresh token provided has expired",
-        });
-      }
+      // If error is not a expire time error, it's probably a token unformatted.
+      // Check this: https://github.com/auth0/node-jsonwebtoken?tab=readme-ov-file#errors--codes
+      // TODO: Check another error case and handle these cases properly.
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        success: false,
+        code: "INVALID_REFRESH_TOKEN",
+        message: "The refresh token provided is in the wrong format",
+      });
     }
 
     const { userPublicId, lastRefreshTokenId } = decodeRefreshToken(
@@ -306,19 +290,13 @@ export class AuthService {
     const user = await this.userService.getOneUserByPublicId(userPublicId);
 
     if (user.lastRefreshTokenId !== lastRefreshTokenId) {
-      throw new BadRequestException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        success: false,
-        code: "EXPIRED_REFRESH_TOKEN",
-        message: "The refresh token provided has expired",
-      });
+      return expiredRefreshTokenException();
     }
 
     try {
-      decodedAccessToken = await this.jwtService.verifyAsync<
-        JwtTokenDecoded<AccessTokenPayload>
-      >(accessToken, {
+      decodedAccessToken = await this.jwtService.verifyAsync(accessToken, {
         complete: true,
+        ignoreExpiration: true, // Not need verify expiration. Just check signature and other format
       });
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
@@ -331,14 +309,67 @@ export class AuthService {
       }
     }
 
-    if (!tokenExpires(decodedAccessToken.header.exp)) {
-      // Black list token before generate a new
+    const expireTime = decodedAccessToken.payload.exp;
+
+    if (!tokenExpires(expireTime)) {
+      await jwtBlackList.addToken(decodedAccessToken.payload.jti, expireTime);
     }
+
+    const newRefreshToken = await this.#generateRefreshToken(user);
+    const newAccessToken = await this.#generateAccessToken(user);
+
+    return {
+      statusCode: HttpStatus.OK,
+      success: true,
+      data: {
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+      },
+    };
   }
 
-  async #generateRefreshToken() {}
+  async #generateRefreshToken({
+    id: userId,
+    publicId: userPublicId,
+  }: UserEntity) {
+    const jwtConfig =
+      await this.configService.get<ApiConf>("apiConf").jwtConfig;
+    const refreshTokenId = generateJwtId();
+    const refreshTokenPayload = {
+      subtoken: makeRefreshTokenPayload({
+        userPublicId: userPublicId,
+        lastRefreshTokenId: refreshTokenId,
+      }),
+    };
 
-  async #generateAccessToken() {}
+    await this.userService.updateOneUser(userId, {
+      lastRefreshTokenId: refreshTokenId,
+    });
+
+    const refreshToken = await this.jwtService.signAsync(refreshTokenPayload, {
+      jwtid: refreshTokenId,
+      expiresIn: jwtConfig.refreshTokenExpiresIn,
+    });
+
+    return refreshToken;
+  }
+
+  async #generateAccessToken(user: UserEntity) {
+    const jwtConfig =
+      await this.configService.get<ApiConf>("apiConf").jwtConfig;
+
+    const payload = {
+      id: user.publicId,
+      groups: user.roles,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      jwtid: generateJwtId(),
+      expiresIn: jwtConfig.accessTokenExpiresIn,
+    });
+
+    return accessToken;
+  }
 }
 
 async function inactiveAccountProccess({

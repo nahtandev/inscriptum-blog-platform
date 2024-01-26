@@ -17,6 +17,7 @@ import { AuthService } from "./auth.service";
           configService.get<ApiConf>("apiConf");
 
         return {
+          publicKey: jwtConfig.publicKey,
           privateKey: {
             asymmetricKeyType: jwtConfig.asymmetricKeyType,
             passphrase: jwtConfig.secret,
@@ -29,7 +30,7 @@ import { AuthService } from "./auth.service";
             audience: [webAppUrl],
           },
           verifyOptions: {
-            ignoreExpiration: true,
+            ignoreExpiration: false,
           },
         };
       },

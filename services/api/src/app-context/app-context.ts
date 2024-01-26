@@ -21,9 +21,10 @@ import {
 } from "./context-type";
 import {
   generateRsaJwtKeys,
-  readJwtPrivateKey,
+  readJwtRsaKey,
 } from "./jwt/jwt-rsa-keys-reader-writer";
 import { readConfigFile } from "./load-configuration";
+import { JwtBlackList, RedisClientConfig } from "./redis-config";
 
 loadEnvVariables();
 
@@ -78,13 +79,28 @@ export async function buildAppContext(): Promise<AppContext> {
     publicKeyFileName: jwt.publicKeyFileName,
   });
 
+  const redisConf: RedisClientConfig = {
+    host: toStringValue(env.REDIS_HOST),
+    password: toStringValue(env.REDIS_PASSWORD),
+    port: toNumberValue(env.REDIS_PORT),
+  };
+
+  const jwtBlackList = new JwtBlackList(redisConf);
+  const { privateKey, publicKey } = readJwtRsaKey(
+    jwtKeyDir,
+    jwtConf.privateKeyFileName,
+    jwtConf.publicKeyFileName
+  );
+
   const jwtConfig: JwtConfig = {
-    privateKey: readJwtPrivateKey(jwtKeyDir, jwtConf.privateKeyFileName),
+    jwtBlackList,
+    privateKey,
+    publicKey,
     secret: jwtSecret,
-    accessTokenExpiresIn: toNumberValue(env.JWT_ACCESS_TOKEN_EXPIRES_IN),
-    refreshTokenExpiresIn: toNumberValue(env.JWT_REFRESH_TOKEN_EXPIRES_IN),
     algorithm: jwtConf.algorithm,
     asymmetricKeyType: jwtConf.asymmetricKeyType,
+    accessTokenExpiresIn: toNumberValue(env.JWT_ACCESS_TOKEN_EXPIRES_IN),
+    refreshTokenExpiresIn: toNumberValue(env.JWT_REFRESH_TOKEN_EXPIRES_IN),
   };
 
   const apiConf: ApiConf = {

@@ -3,18 +3,28 @@ import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { isAccessiblePath, isWritablePath } from "src/helpers/common.helper";
 
-export function readJwtPrivateKey(keyDir: string, keyFileName: string) {
-  const keyPath = join(keyDir, keyFileName);
+export function readJwtRsaKey(
+  keyDir: string,
+  privateKeyFileName: string,
+  publicKeyFileName: string
+) {
+  const privateKeyPath = join(keyDir, privateKeyFileName);
+  const publicKeyPath = join(keyDir, publicKeyFileName);
 
-  if (!isAccessiblePath(keyPath)) {
+  if (!isAccessiblePath(privateKeyPath) || !isAccessiblePath(publicKeyPath)) {
     throw new Error(
-      `[jwt-key-reader]: invalid jwt private key path: ${keyPath}`
+      `[jwt-key-reader]: invalid jwt rsa key path: ${privateKeyPath} | ${publicKeyPath}`
     );
   }
 
   try {
-    const privateKey = readFileSync(keyPath, "utf8");
-    return privateKey.replace(/\\n/gm, "\n");
+    const privateKey = readFileSync(privateKeyPath, "utf8");
+    const publicKey = readFileSync(publicKeyPath, "utf8");
+
+    return {
+      privateKey: privateKey.replace(/\\n/gm, "\n"),
+      publicKey: publicKey.replace(/\\n/gm, "\n"),
+    };
   } catch (error) {
     throw new Error(`[jwt-key-reader]: error to load private key: ${error}`);
   }
