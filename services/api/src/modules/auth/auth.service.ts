@@ -201,6 +201,7 @@ export class AuthService {
         message: "Invalid credentials",
       });
     };
+
     const { webAppUrl, jwtConfig } = this.configService.get<ApiConf>("apiConf");
     const user = await this.userService.getOneUserByEmail(email, true);
 

@@ -1,7 +1,7 @@
 import { KeyType } from "crypto";
 import { Algorithm } from "jsonwebtoken";
 import { Transporter } from "nodemailer";
-import { JwtBlackList } from "./redis-config";
+import { JwtBlackList } from "./jwt-blacklist";
 
 export interface AppContext {
   mailConf: MailConf;

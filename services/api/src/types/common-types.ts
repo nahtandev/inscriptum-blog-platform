@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export type Obj = {
   [key: string]: any;
 };
@@ -30,8 +32,9 @@ export interface JwtDefaultPayload {
   jti: string;
 }
 
-
-
-
-
-
+export interface RequestWithPayload extends Request {
+  user: {
+    id: string;
+    groups: string[];
+  };
+}

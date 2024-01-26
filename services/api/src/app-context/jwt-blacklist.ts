@@ -17,7 +17,7 @@ export class JwtBlackList {
     this.#port = port;
   }
 
-  redisClient() {
+  #redisClient() {
     const client = createClient({
       password: this.#password,
       socket: {
@@ -31,7 +31,7 @@ export class JwtBlackList {
 
   async init() {
     try {
-      const redis = await this.redisClient().connect();
+      const redis = await this.#redisClient().connect();
       console.info("[jwt-redis] connection to redis store init succeful");
       await redis.quit();
     } catch (error) {
@@ -43,7 +43,7 @@ export class JwtBlackList {
 
   async addToken(jwtId: string, expireTime: number) {
     try {
-      const redis = await this.redisClient().connect();
+      const redis = await this.#redisClient().connect();
       await redis.set(jwtId, expireTime, {
         EXAT: expireTime,
       });
@@ -55,14 +55,24 @@ export class JwtBlackList {
     }
   }
 
+  async tokenIsBlackListed(jwtId: string): Promise<boolean> {
+    const redis = await this.#redisClient().connect();
+    const tokenExist = await redis.exists(jwtId);
+    await redis.quit();
+
+    if (tokenExist === 0) return false;
+    return true;
+  }
+
   async getToken(jwtId: string): Promise<string | undefined> {
     try {
-      const redis = await this.redisClient().connect();
-      const tokenExist = await redis.exists(jwtId);
-      if (tokenExist === 0) return undefined;
+      const redis = await this.#redisClient().connect();
+      const tokenExist = await this.tokenIsBlackListed(jwtId);
+      if (!tokenExist) return undefined;
 
       const tokenPayload = await redis.get(jwtId);
       await redis.quit();
+
       return tokenPayload;
     } catch (error) {
       throw new Error(

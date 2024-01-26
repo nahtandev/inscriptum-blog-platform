@@ -19,12 +19,12 @@ import {
   MailSender,
   SmtpConf,
 } from "./context-type";
+import { JwtBlackList, RedisClientConfig } from "./jwt-blacklist";
 import {
   generateRsaJwtKeys,
   readJwtRsaKey,
 } from "./jwt/jwt-rsa-keys-reader-writer";
 import { readConfigFile } from "./load-configuration";
-import { JwtBlackList, RedisClientConfig } from "./redis-config";
 
 loadEnvVariables();
 

@@ -1,4 +1,5 @@
 import { compareSync, hash } from "bcrypt";
+import { Request } from "express";
 import {
   deobfuscateTextData,
   generateRandomString,
@@ -94,4 +95,9 @@ export function decodeRefreshToken(
 
 export function tokenExpires(expiresIn: number) {
   return expiresIn <= unixTimestamp();
+}
+
+export function extractTokenFromHeader(request: Request): string | undefined {
+  const [type, token] = request.headers.authorization?.split(" ") ?? [];
+  return type === "Bearer" ? token : undefined;
 }
