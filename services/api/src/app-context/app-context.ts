@@ -19,9 +19,10 @@ import {
   MailSender,
   SmtpConf,
 } from "./context-type";
+import { JwtBlackList, RedisClientConfig } from "./jwt-blacklist";
 import {
   generateRsaJwtKeys,
-  readJwtPrivateKey,
+  readJwtRsaKey,
 } from "./jwt/jwt-rsa-keys-reader-writer";
 import { readConfigFile } from "./load-configuration";
 
@@ -78,12 +79,28 @@ export async function buildAppContext(): Promise<AppContext> {
     publicKeyFileName: jwt.publicKeyFileName,
   });
 
+  const redisConf: RedisClientConfig = {
+    host: toStringValue(env.REDIS_HOST),
+    password: toStringValue(env.REDIS_PASSWORD),
+    port: toNumberValue(env.REDIS_PORT),
+  };
+
+  const jwtBlackList = new JwtBlackList(redisConf);
+  const { privateKey, publicKey } = readJwtRsaKey(
+    jwtKeyDir,
+    jwtConf.privateKeyFileName,
+    jwtConf.publicKeyFileName
+  );
+
   const jwtConfig: JwtConfig = {
-    privateKey: readJwtPrivateKey(jwtKeyDir, jwtConf.privateKeyFileName),
+    jwtBlackList,
+    privateKey,
+    publicKey,
     secret: jwtSecret,
-    expiresIn: toNumberValue(env.JWT_EXPIRES_IN),
     algorithm: jwtConf.algorithm,
     asymmetricKeyType: jwtConf.asymmetricKeyType,
+    accessTokenExpiresIn: toNumberValue(env.JWT_ACCESS_TOKEN_EXPIRES_IN),
+    refreshTokenExpiresIn: toNumberValue(env.JWT_REFRESH_TOKEN_EXPIRES_IN),
   };
 
   const apiConf: ApiConf = {

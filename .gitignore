@@ -42,3 +42,7 @@ services/api/data/*
 # jwt key
 jwt-private.key
 jwt-public.key.pub
+
+# redis
+packages/api-cache-server/data/*
+packages/api-cache-server/redis-stack.conf

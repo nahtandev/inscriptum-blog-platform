@@ -1,6 +1,7 @@
 import { KeyType } from "crypto";
 import { Algorithm } from "jsonwebtoken";
 import { Transporter } from "nodemailer";
+import { JwtBlackList } from "./jwt-blacklist";
 
 export interface AppContext {
   mailConf: MailConf;
@@ -51,7 +52,10 @@ export interface CloudinaryConfig {
 export interface JwtConfig {
   secret: string;
   privateKey: string;
-  expiresIn: number;
+  publicKey: string;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
   algorithm: Algorithm;
   asymmetricKeyType: KeyType;
+  jwtBlackList: JwtBlackList;
 }

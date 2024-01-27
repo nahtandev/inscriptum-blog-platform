@@ -70,6 +70,7 @@ export class UserService {
         isActive: true,
         publicId: true,
         password: withPassword,
+        lastRefreshTokenId: true,
       },
       where: {
         email,
@@ -90,6 +91,7 @@ export class UserService {
         isActive: true,
         password: withPassword,
         publicId: true,
+        lastRefreshTokenId: true,
       },
       where: { id },
     });
@@ -108,6 +110,7 @@ export class UserService {
         isActive: true,
         password: withPassword,
         publicId: true,
+        lastRefreshTokenId: true,
       },
       where: { publicId },
     });

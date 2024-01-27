@@ -4,7 +4,16 @@ Inscriptum is an open-source blog where anyone can come and share content.
 
 This Github repository contains the entire code base of the project.
 
-## Commit Message Guidelines 
+# Installation
+
+## Redis Server Cache
+Before start redis cache server in developpment environnement, make sure you have this packages installed:
+    - Docker
+    - Docker Compose
+    - Redis stack server ([Read this to install](https://redis.io/docs/install/install-stack/docker/))
+
+
+# Commit Message Guidelines 
 
 **Commit Message Format**
 
